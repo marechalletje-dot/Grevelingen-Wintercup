@@ -887,7 +887,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="to" id="gTo">–</div>
         <div class="gr"><b id="gBtw">–</b><small>°M</small><b id="gDtw">–</b><small>nm</small></div>
         <div class="sub" id="gRem"></div>
-        <div class="btns"><button id="gFollow" aria-pressed="true">volg boot</button><button id="gStop">GPS uit</button></div>
+        <div class="sub" id="gPos"></div>
+        <div class="btns"><button id="gFollow" aria-pressed="true">volg boot</button><button id="gDemo" aria-pressed="false" title="Simuleer een boot die de baan vaart">proefvaart</button><button id="gStop">GPS uit</button></div>
         <div class="msg" id="gMsg"></div>
       </div>
       <div class="scale" id="scale"></div>
@@ -1381,8 +1382,12 @@ function legProgress(l,xy){let best=null,acc=0;
 function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
   let l=CUR.legs[NAV.leg];let pr=legProgress(l,G.xy);
   // aankomst: dicht bij het einde van het rak -> automatisch volgend rak
-  const end=l.p[l.p.length-1];
-  if(Math.hypot(G.xy[0]-end[0],G.xy[1]-end[1])<ARRIVE_NM&&NAV.leg<CUR.legs.length-1&&Date.now()-(G.adv||0)>20000){G.adv=Date.now();NAV.leg++;l=CUR.legs[NAV.leg];pr=legProgress(l,G.xy);if(LV.i>=0){LV.i=NAV.leg;markFocus();fitLeg()}}
+  let moved=false;
+  for(let guard=0;guard<5&&NAV.leg<CUR.legs.length-1;guard++){
+    const len=pr.along+pr.rem;const nl=CUR.legs[NAV.leg+1];const pr2=legProgress(nl,G.xy);
+    const arrived=pr.rem<ARRIVE_NM||(pr.along>0.8*len&&pr2.d+0.005<pr.d);
+    if(!arrived)break;NAV.leg++;l=nl;pr=pr2;moved=true}
+  if(moved&&LV.i>=0){LV.i=NAV.leg;markFocus();fitLeg()}
   // volgend routepunt: sla punten over die vlakbij liggen
   let nx=pr.next;if(Math.hypot(G.xy[0]-nx[0],G.xy[1]-nx[1])<ARRIVE_NM&&pr.j<l.p.length-1)nx=l.p[pr.j+1];
   const btw=brgT(G.xy,nx),dtw=Math.hypot(nx[0]-G.xy[0],nx[1]-G.xy[1]);
@@ -1403,23 +1408,42 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
   G.cog=c.heading!=null&&!isNaN(c.heading)&&G.sog>0.5?c.heading:(G.sog==null||G.sog>0.5?(G.cogCalc??null):null);
   const last=G.trail[G.trail.length-1];if(!last||Math.hypot(xy[0]-last[0],xy[1]-last[1])*1852>8){G.trail.push(xy);if(G.trail.length>3000)G.trail.shift()}
   $('gSog').textContent=G.sog==null?'–':G.sog.toFixed(1);$('gCog').textContent=G.cog==null?'–':pad3(G.cog-D.decl).replace('°','');
+  const dm=v=>{const a=Math.abs(v),d=Math.floor(a);return `${d}°${((a-d)*60).toFixed(3)}′`};
+  $('gPos').textContent=`${G.demo?'PROEFVAART · ':''}${dm(c.latitude)}${c.latitude>=0?'N':'Z'} ${dm(c.longitude)}${c.longitude>=0?'O':'W'} · ±${Math.round(c.accuracy)} m · ${new Date(now).toLocaleTimeString('nl-NL')}`;
   $('gMsg').textContent=c.accuracy>50?`Lage nauwkeurigheid (±${Math.round(c.accuracy)} m)`:'';
-  if(xy[0]<ALL.x-2||xy[0]>ALL.x+ALL.w+2||xy[1]<ALL.y-2||xy[1]>ALL.y+ALL.h+2)$('gMsg').textContent='Je bent buiten het kaartgebied (Grevelingen).';
+  G.outside=xy[0]<ALL.x-1||xy[0]>ALL.x+ALL.w+1||xy[1]<ALL.y-1||xy[1]>ALL.y+ALL.h+1;
+  if(G.outside){const st=CUR?CUR.S.start:[0,0];const km=Math.hypot(xy[0]-st[0],xy[1]-st[1])*1.852;$('gMsg').style.color='var(--ink)';$('gMsg').textContent=`GPS werkt ✓ — je bent buiten de Grevelingen (${km<100?km.toFixed(1):Math.round(km)} km van de start). Op het water verschijnt hier je boot op de kaart.`}else $('gMsg').style.color='';
   gpsUpdate();
-  if(G.follow){if(LV.i>=0&&!G.fitted){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
+  if(G.follow&&!G.outside){if(LV.i>=0&&!G.fitted){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
 }
 function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(G.on&&document.visibilityState==='visible')wake()});
-function gpsStart(){
+function gpsStart(){if(G.demo)demoStop();G.trail=[];G.prev=null;hudPanel(true);
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');
   if(!('geolocation' in navigator)){$('gMsg').textContent='Deze browser geeft geen locatie door.';return}
   if(window.isSecureContext===false){$('gMsg').textContent='Locatie werkt alleen via https (bijv. de GitHub-link).'}
   G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;
   gpsEls();$('gpsL').style.display='';$('gTo').textContent='Zoekt GPS…';
   G.watch=navigator.geolocation.watchPosition(gpsFix,gpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});wake()}
-function gpsStop(keepMsg){if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
+function gpsStop(keepMsg){if(G.demo)demoStop();hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
+function hudPanel(on){if(window.innerWidth<760)return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
+// proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
+function demoStart(){if(!CUR)return;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
+  G.on=true;G.demo=true;G.trail=[];G.prev=null;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');$('gDemo').setAttribute('aria-pressed','true');
+  $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');gpsEls();$('gpsL').style.display='';NAV.leg=0;G.adv=0;hudPanel(true);fitTo(startBox,0.6);
+  const pts=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0)pts.push(q)}));
+  const KN=6,SPEED=60,DT=1;let seg=0,t=0,simT=Date.now();
+  const toLLd=(x,y)=>[-y/60+51.74,x/(Math.cos(51.74*Math.PI/180)*60)+3.95];
+  clearInterval(G.demoTimer);
+  G.demoTimer=setInterval(()=>{let step=KN*SPEED*DT/3600;
+    while(step>0&&seg<pts.length-1){const a=pts[seg],b=pts[seg+1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const left=L*(1-t);if(step<left){t+=step/L;step=0}else{step-=left;seg++;t=0}}
+    if(seg>=pts.length-1){demoStop();$('gMsg').textContent='Proefvaart klaar: finish bereikt.';return}
+    const a=pts[seg],b=pts[seg+1];const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;const [la,lo]=toLLd(x,y);simT+=DT*1000*SPEED;
+    gpsFix({timestamp:simT,coords:{latitude:la,longitude:lo,accuracy:5,speed:KN/1.943844,heading:brgT(a,b)}})},DT*1000)}
+function demoStop(){clearInterval(G.demoTimer);G.demoTimer=null;G.demo=false;$('gDemo').setAttribute('aria-pressed','false')}
+$('gDemo').onclick=()=>{if(G.demo){demoStop();gpsStop()}else demoStart()};
 $('gpsBtn').onclick=()=>G.on?gpsStop():gpsStart();
 $('gStop').onclick=()=>gpsStop();
 $('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else{vb.x=G.xy[0]-vb.w/2;vb.y=G.xy[1]-vb.h/2;applyVB()}}};
