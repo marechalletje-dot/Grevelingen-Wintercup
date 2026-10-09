@@ -148,6 +148,14 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 #map.legfocus [data-li]{opacity:.14}
 #map.legfocus [data-li].lf{opacity:1}
 .gpshud{position:absolute;left:10px;top:52px;z-index:3;width:min(250px,calc(100% - 80px));background:color-mix(in srgb,var(--panel) 96%,transparent);border:1px solid var(--rule);border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.18);padding:8px 10px;font-size:12.5px}
+.gpshud .cd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:5px;margin-bottom:5px}
+.gpshud .cdl{display:flex;align-items:baseline;gap:5px}
+.gpshud #gCd{font-family:var(--f-mono);font-weight:700;font-size:34px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.gpshud #gCdSrc{font-size:10.5px;color:var(--muted)}
+.gpshud .cdt{font-family:var(--f-disp);font-weight:700;font-size:14px;line-height:1.15}
+.gpshud .cd.soon #gCd{color:#e06a00}
+.gpshud .cd.now #gCd{color:#c8232c;animation:cdblink 1s steps(2,start) infinite}
+@keyframes cdblink{to{visibility:hidden}}
 .gpshud .gr{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:0 6px;align-items:baseline}
 .gpshud .gr b{font-family:var(--f-mono);font-size:22px;line-height:1.1}
 .gpshud .gr small{color:var(--muted)}
@@ -234,7 +242,7 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 .tip{position:absolute;z-index:3;pointer-events:none;background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:5px 8px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
 .tip b{font-family:var(--f-disp);font-size:16px}
 .tip span{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.legs-panel{position:absolute;right:10px;bottom:10px;z-index:2;width:min(690px,calc(100% - 20px));background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--rule);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.legs-panel{position:absolute;right:66px;bottom:10px;z-index:2;width:min(690px,calc(100% - 80px));background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--rule);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .legs-panel summary{cursor:pointer;padding:7px 10px;font-family:var(--f-disp);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;list-style:none;display:flex;justify-content:space-between;gap:12px}
 .legs-panel summary::-webkit-details-marker{display:none}
 .legs-panel summary::after{content:"▾";transition:transform .15s}
@@ -354,7 +362,7 @@ table.dl tr.off td{opacity:.45}
   .legs-panel{position:static;width:auto;max-width:none;margin:8px;box-shadow:none}
   .legnav{top:calc(max(68svh,360px) - 52px);bottom:auto;left:6px}.legnav button{padding:8px 12px;font-size:16px}
   .leginfo{left:6px;top:calc(max(68svh,360px) - 60px);bottom:auto;transform:translateY(-100%);font-size:12.5px;padding:6px 9px;max-width:calc(100% - 60px)}.leginfo .t{font-size:14px}
-  .gpshud{top:46px;left:6px;width:min(230px,calc(100% - 70px));padding:6px 8px;font-size:11.5px}.gpshud .gr b{font-size:18px}.gpshud .to{font-size:12.5px;margin:3px 0 1px}.gpshud .sub{font-size:11px}.gpshud .btns{margin-top:5px}.gpshud .btns button{padding:4px 0;font-size:13px}
+  .gpshud{top:46px;left:6px;width:min(230px,calc(100% - 70px));padding:6px 8px;font-size:11.5px}.gpshud #gCd{font-size:28px}.gpshud .cdt{font-size:12.5px}.gpshud .gr b{font-size:18px}.gpshud .to{font-size:12.5px;margin:3px 0 1px}.gpshud .sub{font-size:11px}.gpshud .btns{margin-top:5px}.gpshud .btns button{padding:4px 0;font-size:13px}
   .legs-panel .inner{max-height:none}
   .log .tbl table{font-size:13px}
   .lp col.c-rd{width:3.3em}.lp col.c-pos{width:2.6em}.lp col.c-twa{width:3.4em}.lp col.c-k{width:3.6em}.lp col.c-no{width:2.2em}
@@ -773,7 +781,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="htxt">
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
-    <p class="ver" id="appVer">Versie 11 · 9 okt 2026</p>
+    <p class="ver" id="appVer">Versie 12 · 9 okt 2026</p>
     </div>
   </header>
   <nav class="tabs" role="tablist">
@@ -913,6 +921,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       <div class="legnav" id="legNav" role="group" aria-label="Rak-weergave"><button id="lnPrev" aria-label="Vorig rak">◀</button><button id="lnLab" class="lab" aria-label="Rak-weergave aan/uit">Per rak</button><button id="lnNext" aria-label="Volgend rak">▶</button></div>
       <div class="leginfo" id="legInfo" hidden></div>
       <div class="gpshud" id="gpsHud" hidden>
+        <div class="cd" id="gCdBox"><div class="cdl"><span id="gCd">--:--</span><small id="gCdSrc"></small></div><div class="cdt" id="gCdTo">tot volgende boei</div></div>
         <div class="gr"><b id="gSog">–</b><small>kn</small><b id="gCog">–</b><small>°M koers</small></div>
         <div class="to" id="gTo">–</div>
         <div class="gr"><b id="gBtw">–</b><small>°M</small><b id="gDtw">–</b><small>nm</small></div>
@@ -1429,10 +1438,25 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
   const isEnd=nx===l.p[l.p.length-1];
   $('gTo').textContent=`Rak ${NAV.leg+1}/${CUR.legs.length} → ${isEnd?to:'routepunt '+(pr.j)+' van '+(l.p.length-1)}${isEnd&&mk&&mk.s?` (${mk.auto?'pass.':'rond'} ${mk.s})`:''}`;
   $('gBtw').textContent=pad3(btw-D.decl).replace('°','');$('gDtw').textContent=dtw.toFixed(2);
+  // countdown tot de volgende boeironding (einde van dit rak)
+  {const a=l.p[Math.max(0,pr.j-1)],b=l.p[pr.j];const segB=brgT(a,b);
+   let v=null;if(G.sog!=null&&G.cog!=null)v=G.sog*Math.cos((G.cog-segB)*Math.PI/180);else if(G.sog!=null)v=G.sog;
+   if(v!=null){G.vmc=G.vmc==null?v:G.vmc*0.85+v*0.15}
+   const legLen=pr.along+pr.rem||l.nm;let etaH,src;
+   if(G.vmc!=null&&G.vmc>0.5){etaH=pr.rem/G.vmc;src='op je snelheid richting boei'}else{etaH=legTime(l)*(pr.rem/(legLen||1));src='schatting polar'}
+   const k=G.demo?60:1;G.cdTarget=Date.now()+etaH*3600000/k;G.cdSrc=src+(G.demo?' · proefvaart ×60':'');
+   const markName=NAV.leg===0?'de gate':(NAV.leg===CUR.legs.length-1?'de finish':l.t);
+   const side=mk&&mk.s?(mk.auto?` (pass. ${mk.s})`:` (rond ${mk.s})`):'';
+   $('gCdTo').textContent=`tot ${markName}${side}`;cdTick()}
   const eta=G.sog>0.5?pr.rem/G.sog:null;
   $('gRem').textContent=`Rest rak ${pr.rem.toFixed(2)} nm${eta?` · ±${fmtT(eta)}`:''} · ${Math.round(pr.xte*1852)} m naast lijn${isEnd?'':` · daarna ${to}`}`;
   $('gNext').setAttribute('x1',G.xy[0]);$('gNext').setAttribute('y1',G.xy[1]);$('gNext').setAttribute('x2',nx[0]);$('gNext').setAttribute('y2',nx[1]);
   gpsDraw()}
+function cdTick(){if(!G.on||G.cdTarget==null)return;const sec=Math.max(0,Math.round((G.cdTarget-Date.now())/1000));
+  const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s2=sec%60;
+  $('gCd').textContent=h?`${h}:${String(m).padStart(2,'0')}:${String(s2).padStart(2,'0')}`:`${m}:${String(s2).padStart(2,'0')}`;
+  $('gCdSrc').textContent=G.cdSrc||'';$('gCdBox').classList.toggle('soon',sec<=60&&sec>15);$('gCdBox').classList.toggle('now',sec<=15)}
+setInterval(cdTick,500);
 function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const now=p.timestamp||Date.now();
   if(G.prev){const d=Math.hypot(xy[0]-G.prev.xy[0],xy[1]-G.prev.xy[1]);const dt=(now-G.prev.t)/3600000;
     if(d*1852>4){G.cogCalc=brgT(G.prev.xy,xy);if(dt>0)G.sogCalc=d/dt;G.prev={xy,t:now}}}
@@ -1453,7 +1477,7 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
 function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(G.on&&document.visibilityState==='visible')wake()});
-function gpsStart(){if(G.demo)demoStop();G.trail=[];G.prev=null;hudPanel(true);
+function gpsStart(){if(G.demo)demoStop();G.trail=[];G.prev=null;G.vmc=null;G.cdTarget=null;$('gCd').textContent='--:--';hudPanel(true);
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');
   if(!('geolocation' in navigator)){$('gMsg').textContent='Deze browser geeft geen locatie door.';return}
   if(window.isSecureContext===false){$('gMsg').textContent='Locatie werkt alleen via https (bijv. de GitHub-link).'}
@@ -1464,7 +1488,7 @@ function gpsStop(keepMsg){if(G.demo)demoStop();hudPanel(false);if(G.watch!=null)
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
 function hudPanel(on){if(window.innerWidth<760)return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
 // proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
-function demoStart(){if(!CUR)return;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
+function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
   G.on=true;G.demo=true;G.trail=[];G.prev=null;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');$('gDemo').setAttribute('aria-pressed','true');
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');gpsEls();$('gpsL').style.display='';NAV.leg=0;G.adv=0;hudPanel(true);fitTo(startBox,0.6);
   const pts=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0)pts.push(q)}));
