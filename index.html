@@ -168,6 +168,13 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 .stylebar button+button{border-left:1px solid var(--rule)}
 .stylebar button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 .stylebar button:focus-visible{outline:2px solid var(--route);outline-offset:-2px}
+#tiles image{image-rendering:auto}
+#map.far .mk .lab,#map.far .crs,#map.far .corrlab,#map.far .legno,#map.far .place,#map.far .alab,#map.far .wtag,#map.far #buoys{display:none}
+#map.st-chart #tiles{filter:sepia(.18) saturate(.85)}
+#map.st-night #tiles{filter:invert(1) hue-rotate(180deg) brightness(.55) sepia(.5)}
+#map.st-dim #tiles{filter:url(#fDim)}
+.attrib{position:absolute;right:8px;top:8px;z-index:1;font-size:10px;color:var(--muted);background:color-mix(in srgb,var(--panel) 75%,transparent);padding:1px 5px;border-radius:4px;pointer-events:none;display:none}
+#chart.tiles-on .attrib{display:block}
 /* kaartstijl: Kaart (papieren zeekaart) */
 #map.st-chart{background:#efe6cc}
 #map.st-chart .land{fill:#efe6cc}
@@ -763,7 +770,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="htxt">
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
-    <p class="ver" id="appVer">Versie 9 · 9 okt 2026</p>
+    <p class="ver" id="appVer">Versie 10 · 9 okt 2026</p>
     </div>
   </header>
   <nav class="tabs" role="tablist">
@@ -869,7 +876,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             <circle cx="0.025" cy="0.025" r="0.006" style="fill:var(--nod)"/>
           </pattern>
         </defs>
-        <rect class="land" x="-50" y="-50" width="100" height="100" stroke="none"/>
+        <rect class="land" x="-400" y="-400" width="800" height="800" stroke="none"/>
+        <g id="tiles"></g>
         <image id="sat" preserveAspectRatio="none"/>
         <path id="water" class="wat" fill-rule="evenodd"/>
         <g id="depth">
@@ -896,6 +904,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <button id="fitS" class="wide" aria-label="Zoom op start">start</button>
         <button id="fitF" class="wide" aria-label="Zoom op finish">finish</button>
         <button id="all" class="wide" aria-label="Hele meer">meer</button>
+        <button id="nlBtn" class="wide" aria-label="Heel Nederland">NL</button>
         <button id="gpsBtn" class="wide" aria-pressed="false" aria-label="Toon GPS-positie">GPS</button>
       </div>
       <div class="legnav" id="legNav" role="group" aria-label="Rak-weergave"><button id="lnPrev" aria-label="Vorig rak">◀</button><button id="lnLab" class="lab" aria-label="Rak-weergave aan/uit">Per rak</button><button id="lnNext" aria-label="Volgend rak">▶</button></div>
@@ -910,6 +919,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="msg" id="gMsg"></div>
       </div>
       <div class="scale" id="scale"></div>
+      <div class="attrib" id="attrib">Kaart © Kadaster / PDOK</div>
       <div class="tip" id="tip" hidden></div>
       <details class="legs-panel" id="legsPanel" open>
         <summary><span id="lpTitle">Rakken</span></summary>
@@ -1017,7 +1027,7 @@ $('dShal').setAttribute('d',D.shal);$('dMid').setAttribute('d',D.mid);$('dNod').
 const si=$('sat');si.setAttribute('href',IMG.href);['x','y','width','height'].forEach(k=>si.setAttribute(k,IMG[k]));
 let mapStyle='chart';try{const v=localStorage.getItem('wc_style2');if(['chart','dim','photo','night'].includes(v))mapStyle=v}catch(e){}
 function setStyle(st){mapStyle=st;svg.classList.remove('st-chart','st-dim','st-photo','st-night');svg.classList.add('st-'+st);svg.classList.toggle('sat',st==='photo');si.style.display=(st==='chart'||st==='night')?'none':'';
-  document.querySelectorAll('#styleSel button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.st===st?'true':'false'));try{localStorage.setItem('wc_style2',st)}catch(e){};try{if(CUR)applyVB()}catch(e){}}
+  document.querySelectorAll('#styleSel button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.st===st?'true':'false'));try{localStorage.setItem('wc_style2',st)}catch(e){};try{if(CUR)applyVB()}catch(e){}try{scheduleTiles()}catch(e){}}
 document.querySelectorAll('#styleSel button').forEach(b=>b.onclick=()=>setStyle(b.dataset.st));setStyle(mapStyle);
 const [bx0,by0,bx1,by1]=D.bounds;
 const ALL={x:bx0-0.2,y:-by1-0.2,w:(bx1-bx0)+0.4,h:(by1-by0)+0.4};
@@ -1060,8 +1070,10 @@ function applyVB(kOver){
   document.querySelectorAll('[data-s]').forEach(e=>e.setAttribute('transform',`translate(${e.dataset.x},${e.dataset.y}) rotate(${e.dataset.a||0}) scale(${k*(+e.dataset.s)})`));
   document.querySelectorAll('.mk .lab').forEach(e=>{e.setAttribute('x',+e.dataset.x+k*12);e.setAttribute('y',+e.dataset.y-k*8)});
   document.querySelectorAll('[data-nx]').forEach(e=>placeLab(e,1,k));
+  svg.classList.toggle('far',k>0.03);
   declutter(k);
   try{if(G.on)gpsDraw()}catch(e){}
+  try{scheduleTiles()}catch(e){}
   if(kOver)return;
   const nmPx=1/k; let s=[0.1,0.25,0.5,1,2,5].find(v=>v*nmPx>70)||5;
   $('scale').innerHTML=`<span style="display:inline-block;width:${s*nmPx}px;border-bottom:2px solid currentColor;margin-right:6px"></span>${s} nm`;
@@ -1079,7 +1091,7 @@ function declutter(k){
     for(const sd of [1,-1,1.8,-1.8]){placeLab(e,sd,k);const r=R(e);if(!hit(r)){placed.push(r);return}}e.style.visibility='hidden'});
 }
 function fitTo(b,pad=0.12){const r=svg.getBoundingClientRect();const ar=r.width/r.height;let w=b.w*(1+pad*2),h=b.h*(1+pad*2);if(w/h<ar)w=h*ar;else h=w/ar;vb={x:b.x+b.w/2-w/2,y:b.y+b.h/2-h/2,w,h};applyVB()}
-function zoom(f,cx,cy){if(cx===undefined){cx=vb.x+vb.w/2;cy=vb.y+vb.h/2}const nw=Math.min(Math.max(vb.w*f,0.25),ALL.w*1.6);const s=nw/vb.w;vb={x:cx-(cx-vb.x)*s,y:cy-(cy-vb.y)*s,w:vb.w*s,h:vb.h*s};applyVB()}
+function zoom(f,cx,cy){if(cx===undefined){cx=vb.x+vb.w/2;cy=vb.y+vb.h/2}const nw=Math.min(Math.max(vb.w*f,0.25),260);const s=nw/vb.w;vb={x:cx-(cx-vb.x)*s,y:cy-(cy-vb.y)*s,w:vb.w*s,h:vb.h*s};applyVB()}
 function pt(e){const r=svg.getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*k-vb.w)/2,oy=(r.height*k-vb.h)/2;return [vb.x-ox+(e.clientX-r.left)*k,vb.y-oy+(e.clientY-r.top)*k,k]}
 function toScreen(x,y){const r=svg.getBoundingClientRect(),c=$('chart').getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*k-vb.w)/2,oy=(r.height*k-vb.h)/2;return [(x-vb.x+ox)/k+r.left-c.left,(y-vb.y+oy)/k+r.top-c.top]}
 svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=pt(e);zoom(e.deltaY>0?1.18:1/1.18,x,y)},{passive:false});
@@ -1106,6 +1118,7 @@ function clickAt(e){
 }
 function placeTip(){if(!tipAt||$('tip').hidden)return;const [sx,sy]=toScreen(...tipAt);$('tip').style.left=sx+'px';$('tip').style.top=sy+'px'}
 $('zin').onclick=()=>zoom(1/1.4);$('zout').onclick=()=>zoom(1.4);$('all').onclick=()=>fitTo(ALL,0);
+$('nlBtn').onclick=()=>{const a=llXY(53.6,3.3),b=llXY(50.72,7.25);fitTo({x:a[0],y:a[1],w:b[0]-a[0],h:b[1]-a[1]},0.02)};
 let curBox=ALL,startBox=ALL;$('fit').onclick=()=>fitTo(curBox);$('fitS').onclick=()=>fitTo(startBox,0.25);
 const FB={x:Math.min(D.finish.ship[0],D.finish.buoy[0])-0.25,y:Math.min(D.finish.ship[1],D.finish.buoy[1])-0.2,w:0.5,h:0.4};$('fitF').onclick=()=>fitTo(FB,0.1);
 $('tDepth').onchange=e=>{$('depth').style.display=e.target.checked?'':'none'};
@@ -1430,9 +1443,9 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
   $('gPos').textContent=`${G.demo?'PROEFVAART · ':''}${dm(c.latitude)}${c.latitude>=0?'N':'Z'} ${dm(c.longitude)}${c.longitude>=0?'O':'W'} · ±${Math.round(c.accuracy)} m · ${new Date(now).toLocaleTimeString('nl-NL')}`;
   $('gMsg').textContent=c.accuracy>50?`Lage nauwkeurigheid (±${Math.round(c.accuracy)} m)`:'';
   G.outside=xy[0]<ALL.x-1||xy[0]>ALL.x+ALL.w+1||xy[1]<ALL.y-1||xy[1]>ALL.y+ALL.h+1;
-  if(G.outside){const st=CUR?CUR.S.start:[0,0];const km=Math.hypot(xy[0]-st[0],xy[1]-st[1])*1.852;$('gMsg').style.color='var(--ink)';$('gMsg').textContent=`GPS werkt ✓ — je bent buiten de Grevelingen (${km<100?km.toFixed(1):Math.round(km)} km van de start). Op het water verschijnt hier je boot op de kaart.`}else $('gMsg').style.color='';
+  if(G.outside){const st=CUR?CUR.S.start:[0,0];const km=Math.hypot(xy[0]-st[0],xy[1]-st[1])*1.852;$('gMsg').style.color='var(--ink)';$('gMsg').textContent=`GPS werkt ✓ — je bent buiten de Grevelingen (${km<100?km.toFixed(1):Math.round(km)} km van de start).`}else $('gMsg').style.color='';
   gpsUpdate();
-  if(G.follow&&!G.outside){if(LV.i>=0&&!G.fitted){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
+  if(G.follow){if(G.outside&&!G.outFit){G.outFit=true;const r=svg.getBoundingClientRect();vb.w=3;vb.h=3*(r.height/r.width||0.7)}if(LV.i>=0&&!G.fitted&&!G.outside){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
 }
 function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
@@ -1465,6 +1478,47 @@ $('gDemo').onclick=()=>{if(G.demo){demoStop();gpsStop()}else demoStart()};
 $('gpsBtn').onclick=()=>G.on?gpsStop():gpsStart();
 $('gStop').onclick=()=>gpsStop();
 $('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else{vb.x=G.xy[0]-vb.w/2;vb.y=G.xy[1]-vb.h/2;applyVB()}}};
+
+
+// ---------- achtergrondkaart Nederland (PDOK-tegels, alleen online; offline uit cache) ----------
+const TILE={map:{url:(z,x,y,st)=>`https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/${st==='night'?'grijs':'pastel'}/EPSG:3857/${z}/${x}/${y}.png`,max:17},
+  foto:{url:(z,x,y)=>`https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/${z}/${x}/${y}.jpeg`,max:18}};
+const tileEls=new Map();let tileOK=false,tileFail=0;
+function tLon(x,z){return x/2**z*360-180}
+function tLat(y,z){const n=Math.PI-2*Math.PI*y/2**z;return 180/Math.PI*Math.atan(Math.sinh(n))}
+function lon2t(lon,z){return Math.floor((lon+180)/360*2**z)}
+function lat2t(lat,z){const r=lat*Math.PI/180;return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*2**z)}
+const KXl=Math.cos(51.74*Math.PI/180)*60;
+function xyLL(x,y){return [-y/60+51.74,x/KXl+3.95]}
+function updateTiles(){
+  const g=$('tiles');if(!g)return;
+  if(location.protocol==='file:'&&!window.__STANDALONE__){g.innerHTML='';return}
+  const r=svg.getBoundingClientRect();if(!r.width)return;
+  const k=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*k-vb.w)/2,oy=(r.height*k-vb.h)/2;
+  const x0=vb.x-ox,y0=vb.y-oy,x1=x0+r.width*k,y1=y0+r.height*k;
+  const src=(mapStyle==='photo'||mapStyle==='dim')?TILE.foto:TILE.map;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  let z=Math.round(Math.log2(360*KXl/(256*k/dpr)));z=Math.max(6,Math.min(src.max,z));
+  const [la0,lo0]=xyLL(x0,y1),[la1,lo1]=xyLL(x1,y0);
+  let tx0=lon2t(lo0,z),tx1=lon2t(lo1,z),ty0=lat2t(la1,z),ty1=lat2t(la0,z);
+  while((tx1-tx0+1)*(ty1-ty0+1)>120&&z>6){z--;tx0=lon2t(lo0,z);tx1=lon2t(lo1,z);ty0=lat2t(la1,z);ty1=lat2t(la0,z)}
+  const want=new Set();const pre=(mapStyle==='photo'||mapStyle==='dim'?'f':'m')+(mapStyle==='night'?'n':'')+'/';
+  for(let tx=tx0;tx<=tx1;tx++)for(let ty=ty0;ty<=ty1;ty++){
+    const key=pre+z+'/'+tx+'/'+ty;want.add(key);if(tileEls.has(key))continue;
+    const a=llXY(tLat(ty,z),tLon(tx,z)),b=llXY(tLat(ty+1,z),tLon(tx+1,z));
+    const im=el('image',{x:a[0],y:a[1],width:b[0]-a[0]+1e-4,height:b[1]-a[1]+1e-4,preserveAspectRatio:'none'},null);
+    im.dataset.z=z;im.addEventListener('load',()=>{tileOK=true;$('chart').classList.add('tiles-on')});im.addEventListener('error',()=>{tileFail++;im.remove();tileEls.delete(key)});
+    im.setAttribute('href',src.url(z,tx,ty,mapStyle));g.appendChild(im);tileEls.set(key,im)}
+  // keep tiles of other zoom levels briefly underneath until the new ones are loaded; drop far-away ones
+  for(const [key,im] of tileEls){if(want.has(key))continue;
+    const zz=+im.dataset.z;if(key.slice(0,pre.length)!==pre||Math.abs(zz-z)>1){im.remove();tileEls.delete(key);continue}
+    const bx=+im.getAttribute('x'),by=+im.getAttribute('y'),bw=+im.getAttribute('width'),bh=+im.getAttribute('height');
+    if(bx>x1||bx+bw<x0||by>y1||by+bh<y0){im.remove();tileEls.delete(key)}}
+  // newest zoom level on top
+  [...g.children].sort((p,q)=>(+p.dataset.z)-(+q.dataset.z)).forEach(n=>g.appendChild(n));
+  if(tileEls.size>400){for(const [key,im] of tileEls){if(!want.has(key)){im.remove();tileEls.delete(key)}}}
+}
+let tileTimer=null;function scheduleTiles(){clearTimeout(tileTimer);tileTimer=setTimeout(()=>{try{updateTiles()}catch(e){}},60)}
 
 function hl(i){document.querySelectorAll('#course .leg').forEach(p=>p.style.opacity=i<0?'':(+p.dataset.i===i?1:.25));document.querySelectorAll('#legs tr,#lpBody tr').forEach(r=>r.classList.toggle('hl',+r.dataset.i===i))}
 // ---------- PDF A3 ----------
