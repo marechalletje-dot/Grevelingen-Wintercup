@@ -141,8 +141,47 @@ header .htxt{min-width:0}
 header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85}
 .racebtn{display:block;width:100%;margin:0 0 10px;padding:12px 10px;border:0;border-radius:9px;background:#c8232c;color:#fff;font-family:var(--f-disp);font-weight:700;font-size:20px;letter-spacing:.04em;cursor:pointer;box-shadow:0 2px 8px rgba(200,35,44,.35)}
 .racebtn.on{background:var(--ink)}
-body.race header p:not(.ver),body.race .tabs{display:none}
-@media (max-width:760px){body.race .r-wind,body.race .r-course,body.race .r-area,body.race .r-info,body.race .r-actions,body.race .r-legend{display:none}body.race .chart svg#map{height:82svh}body.race .rail{display:block}body.race header{display:none}}
+[hidden]{display:none!important}
+@media (max-width:760px){nav.tabs{overflow-x:auto;min-width:0;gap:0}nav.tabs button{font-size:15px;padding:8px 8px;white-space:nowrap}nav.tabs .tlong{display:none}}
+#map{overflow:hidden}.chart{overflow:hidden}
+body.race .racebar label,body.race .racebar input{min-width:0}
+.tabs .tabrace{color:#c8232c}
+.tabs .tabrace[aria-selected="true"]{color:#c8232c;border-bottom-color:#c8232c}
+.racebar{display:none}
+body:not(.race) #legBtn{display:none}
+body.race #zin,body.race #zout,body.race #gpsBtn,body.race #all,body.race #nlBtn{display:none}
+body.race .gpshud #raceRow,body.race .gpshud #pingBox .lnk{display:none}
+body.race .racebar .rbstart{display:flex;align-items:center;gap:6px;flex:1 1 220px;font-family:var(--f-disp);font-weight:700;font-size:15px}
+body.race .racebar .rbstart input{font-family:var(--f-mono);font-size:16px;padding:3px 4px;border:1px solid var(--rule);border-radius:5px;background:var(--panel);color:var(--ink);min-width:0;flex:1 1 auto;max-width:9em}
+body.race .racebar .rbstart button{border:1px solid var(--rule);border-radius:5px;padding:5px 10px;background:var(--panel);color:var(--ink);font-family:var(--f-disp);font-weight:700;cursor:pointer}
+body.race .racebar .rbstart button#rbSigNow{background:#2f4060;color:#fff;border-color:#2f4060}
+body.race .racebar .rbstart .lnk{border:0;background:none;color:var(--muted);text-decoration:underline;padding:4px}
+.rbclock{flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:14px;border-radius:8px;padding:6px 12px;background:#2f4060;color:#fff;font-family:var(--f-disp);font-weight:800;letter-spacing:.06em}
+.rbclock[hidden]{display:none!important}
+.rbclock b{font-family:var(--f-mono);font-size:44px;line-height:1.05;min-width:0!important;letter-spacing:0}
+.rbclock small{font-size:14px;font-weight:600;opacity:.85;letter-spacing:0}
+.rbclock.soon{background:#e06a00}.rbclock.now{background:#c8232c;animation:cdblink 1s steps(2,start) infinite}
+.rbclock.go{background:#1f8a3b}
+.rbclock button{border:0;border-radius:6px;padding:8px 16px;background:#c8232c;color:#fff;font-family:var(--f-disp);font-weight:800;font-size:16px;cursor:pointer}
+.rbclock.run button{background:#fff;color:#c8232c}
+.legpop{position:absolute;left:6px;top:6px;z-index:5;max-height:min(calc(100% - 12px),55svh);overflow:auto;width:min(300px,calc(100% - 110px));background:var(--panel);border:1px solid var(--rule);border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.2);padding:10px 12px;font-size:12.5px}
+.legpop .x{position:sticky;top:0;float:right;border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--ink)}
+@media (max-width:760px){.rbclock b{font-size:34px}.rbclock{gap:8px;padding:4px 8px}body.race .racebar .rbstart{flex:1 1 100%;font-size:13px}}
+body.race header{display:none}
+body.race .rail{display:none}
+body.race .main{grid-template-columns:minmax(0,1fr)}
+body.race .racebar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:6px 10px;background:var(--panel);border:1px solid var(--rule);border-radius:8px}
+body.race .log{display:none}
+body.race .racebar label{display:flex;align-items:center;gap:8px;flex:1 1 220px;font-family:var(--f-disp);font-weight:700;font-size:15px}
+body.race .racebar b{font-family:var(--f-mono);font-size:18px;min-width:3.6em}
+body.race .racebar input[type=range]{flex:1;accent-color:var(--fair);height:28px}
+body.race #styleSel,body.race #all,body.race #nlBtn,body.race #legNav,body.race #legInfo,body.race #gPos,body.race #attrib{display:none}
+body.race .legs-panel .spiplan,body.race .legs-panel tfoot{display:none}
+body.race .chart svg#map{height:min(78vh,820px)}
+#lpBody tr.cur td{background:#ffe2b8;font-weight:700}
+#lpBody tr.cur td:first-child{box-shadow:inset 5px 0 0 #c8232c}
+body.race #gFollow,body.race #gStop{display:none}
+@media (max-width:760px){body.race .racebar{gap:4px 10px;padding:4px 8px}body.race .racebar label{flex:1 1 40%;font-size:13px;gap:4px}body.race .racebar b{font-size:15px;min-width:2.9em}body.race #gCdSrc{display:none}body.race #gTo,body.race #gRem{display:none}body.race .gpshud .btns button,body.race .gpshud .btns select{font-size:11.5px}body.race .main{gap:6px}body.race .chart svg#map{height:58svh;min-height:300px}body.race .legs-panel .inner{max-height:28svh;overflow:auto}body.race .gpshud{width:min(220px,calc(100% - 64px))}}
 .gpshud .race{display:flex;gap:6px;align-items:center;margin-top:5px;font-size:12.5px}
 .gpshud .race[hidden],.gpshud .res[hidden]{display:none}
 @media (max-width:760px){body.race #gPos{display:none}body.race .gpshud .ping summary{font-size:12px}}
@@ -815,17 +854,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="htxt">
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
-    <p class="ver" id="appVer">Versie 17 · 9 okt 2026</p>
+    <p class="ver" id="appVer">Versie 19 · 9 okt 2026</p>
     </div>
   </header>
   <nav class="tabs" role="tablist">
     <button role="tab" id="tbKaart" data-tab="Kaart" aria-selected="true">Banenkaart</button>
-    <button role="tab" id="tbDeeln" data-tab="Deeln" aria-selected="false">Deelnemers &amp; marges</button>
+    <button role="tab" id="tbRace" data-tab="Race" aria-selected="false" class="tabrace">Racemodus</button>
+    <button role="tab" id="tbDeeln" data-tab="Deeln" aria-selected="false">Deelnemers<span class="tlong"> &amp; marges</span></button>
   </nav>
   <div id="tabKaart">
   <div class="main">
     <aside class="rail">
-      <button id="raceBtn" class="racebtn" type="button">▶ Racemodus</button>
+      <button id="raceBtn" class="racebtn" type="button">▶ Naar racemodus</button>
       <div class="r-wind">
       <h2>Boot</h2>
       <select id="boatSel" class="boatsel" aria-label="Kies boot"><option value="dm">Dream Machine · Elan 380 — Toerklasse 1 met spi</option><option value="xp">X-C Pole · XP-33 — ORC klasse 2</option></select>
@@ -893,6 +933,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       </details>
       <div class="r-actions"><button id="pdfBtn" class="act">PDF A3 van deze baan</button><button id="gpxBtn" class="act alt">GPX-route voor de plotter</button><div class="sub" id="pdfMsg"></div></div>
     </aside>
+    <div class="racebar" id="raceBar">
+        <label>TWD <b id="rbTwd">270°</b><input type="range" id="rbTwdR" min="0" max="355" step="5" aria-label="Windrichting"></label>
+        <label>TWS <b id="rbTws">20 kn</b><input type="range" id="rbTwsR" min="4" max="24" step="1" aria-label="Windsnelheid"></label>
+        <label>Polar <b id="rbEff">100%</b><input type="range" id="rbEffR" min="50" max="110" step="5" aria-label="Rendement polar"></label>
+        <div class="rbstart"><span>5-min sein</span><input type="time" id="rbSig5" step="1" aria-label="Tijd 5-minutensein"><button type="button" id="rbSigNow">nu</button><button type="button" id="rbSigClr" class="lnk" title="Starttimer wissen">wis</button></div>
+        <div class="rbclock" id="rbClock" hidden><span id="rbClkLab">START OVER</span><b id="rbClkT">5:00</b><small id="rbClkAt"></small><button type="button" id="rbFin" hidden>Finish ⏱</button></div>
+      </div>
     <section class="chart" id="chart">
       <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kaart van het Grevelingenmeer met de gekozen baan">
         <defs>
@@ -960,6 +1007,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <button id="all" class="wide" aria-label="Hele meer">meer</button>
         <button id="nlBtn" class="wide" aria-label="Heel Nederland">NL</button>
         <button id="gpsBtn" class="wide" aria-pressed="false" aria-label="Racemodus met GPS">RACE</button>
+        <button id="legBtn" class="wide" aria-pressed="false" aria-label="Legenda">legenda</button>
       </div>
       <div class="legnav" id="legNav" role="group" aria-label="Rak-weergave"><button id="lnPrev" aria-label="Vorig rak">◀</button><button id="lnLab" class="lab" aria-label="Rak-weergave aan/uit">Per rak</button><button id="lnNext" aria-label="Volgend rak">▶</button></div>
       <div class="leginfo" id="legInfo" hidden></div>
@@ -982,6 +1030,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </details>
       </div>
       <div class="scale" id="scale"></div>
+      <div class="legpop" id="legPop" hidden><button type="button" class="x" id="legPopX" aria-label="Sluit legenda">×</button><div class="legend" id="legPopBody"></div></div>
       <div class="attrib" id="attrib">Kaart © Kadaster / PDOK</div>
       <div class="tip" id="tip" hidden></div>
       <details class="legs-panel" id="legsPanel" open>
@@ -1139,7 +1188,7 @@ function applyVB(kOver){
   .place{font-size:${k*12}px} #map.sat .place{stroke-width:${k*3}px} .alab{font-size:${k*13}px} .area{stroke-width:${k*1.2}px}
   .wat{stroke-width:${k*0.8}px} .d-shal{stroke-width:${k*1.1}px} .d-2{stroke-width:${k*1.4}px;stroke-dasharray:${k*4} ${k*3}}
   .corr{stroke-width:${k*1}px;stroke-dasharray:${k*5} ${k*3}} .corrlab{font-size:${k*14}px;stroke-width:${k*3.5}px}
-  .leg{stroke-width:${k*3.2}px} .halo{stroke-width:${k*6.5}px} .leg.var{stroke-dasharray:${k*7} ${k*5}}
+  .leg{stroke-width:${k*3.2}px} .leg.curleg{stroke-width:${k*6.5}px} .halo{stroke-width:${k*6.5}px} .leg.var{stroke-dasharray:${k*7} ${k*5}}
   .mk .ring{stroke-width:${k*2.6}px} .mk .lab{font-size:${k*13*fz}px;stroke-width:${k*3.5}px}
   .crs{font-size:${k*11*fz}px;stroke-width:${k*3.5}px} .gateb,.fbuoy{stroke-width:${k*1}px} .pingmk{stroke-width:${k*2.5}px} .sline,.fline{stroke-width:${k*2}px} .fship{stroke-width:${k*1.2}px}
   .wtag{font-size:${k*12}px;stroke-width:${k*3}px} .legno text{font-size:${k*12*LZ(k)}px} .legno circle{stroke-width:${k*2}px}`;
@@ -1443,6 +1492,7 @@ function show(fit){
   markFocus();
   if(LV.i>=0){if(fit)fitLeg();else applyVB()}else{if(fit)fitTo(curBox);else applyVB()}
   try{gpsUpdate()}catch(e){}
+  try{markCurLeg(false)}catch(e){}
 }
 
 // ---------- per-rak weergave ----------
@@ -1507,6 +1557,7 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
     const arrived=pr.rem<ARRIVE_NM||(pr.along>0.8*len&&pr2.d+0.005<pr.d);
     if(!arrived)break;NAV.leg++;l=nl;pr=pr2;moved=true}
   if(moved&&LV.i>=0){LV.i=NAV.leg;markFocus();fitLeg()}
+  if(moved||G.lastCur!==NAV.leg){G.lastCur=NAV.leg;markCurLeg(true)}
   // volgend routepunt: sla punten over die vlakbij liggen
   let nx=pr.next;if(Math.hypot(G.xy[0]-nx[0],G.xy[1]-nx[1])<ARRIVE_NM&&pr.j<l.p.length-1)nx=l.p[pr.j+1];
   const btw=brgT(G.xy,nx),dtw=Math.hypot(nx[0]-G.xy[0],nx[1]-G.xy[1]);
@@ -1563,14 +1614,36 @@ function raceTick(){const now=Date.now();const pre=RACE.start&&now<RACE.start;
     if(left<=0&&G.started===false){G.started=true}}
   $('raceRow').hidden=!(G.on&&RACE.start&&now>=RACE.start);
   if(!$('raceRow').hidden){$('raceClock').textContent=hms((RACE.fin||now)-RACE.start);$('finBtn').hidden=!!RACE.fin;$('raceLab').textContent=RACE.fin?'Gezeild':'Race'}
+  rbClock(now);
   return pre}
 function showResult(){if(!RACE.fin){$('raceRes').hidden=true;return}const el=(RACE.fin-RACE.start)/60000;const myf=+$('dlMy').value||DM0;
   $('raceRes').innerHTML=`<b>Finish ${tStr(RACE.fin)}</b><br>Gezeild ${hms(RACE.fin-RACE.start)} · gecorrigeerd ${hms(el*myf*60000)} (× ${myf.toFixed(4)})<br><button id="resGo" type="button">Marges t.o.v. deelnemers →</button> <button id="resUndo" type="button">herstel</button>`;
   $('raceRes').hidden=false;$('resGo').onclick=()=>setTab('Deeln');$('resUndo').onclick=()=>{RACE.fin=null;saveRace();$('dlOver').value='';showResult();renderFleet()}}
 $('finBtn').onclick=()=>{if(!RACE.start)return;RACE.fin=Date.now();saveRace();$('dlOver').value=((RACE.fin-RACE.start)/60000).toFixed(2);beep(1,660,.8);showResult();try{renderFleet()}catch(e){}};
 setInterval(raceTick,250);
-function raceMode(on){document.body.classList.toggle('race',on);$('raceBtn').classList.toggle('on',on);$('raceBtn').textContent=on?'■ Stop racemodus':'▶ Racemodus'}
-$('raceBtn').onclick=()=>{unlockAudio();if(G.on){gpsStop();return}gpsStart();setTimeout(()=>{$('chart').scrollIntoView({behavior:'smooth',block:'start'})},50)};
+function raceMode(on){document.body.classList.toggle('race',on);try{applyVB()}catch(e){}}
+$('raceBtn').onclick=()=>{setTab('Race');setTimeout(()=>{$('chart').scrollIntoView({block:'start'})},50)};
+function rbSync(){$('rbTwdR').value=Math.round(twd/5)*5%360;$('rbTwd').textContent=pad3(twd);$('rbTwsR').value=TWS;$('rbTws').textContent=TWS+' kn';$('rbEffR').value=EFF;$('rbEff').textContent=EFF+'%';$('rbSig5').value=RACE.start?new Date(RACE.start-300000).toTimeString().slice(0,8):''}
+$('rbEffR').addEventListener('input',e=>{$('rbEff').textContent=e.target.value+'%'});
+$('rbEffR').addEventListener('change',e=>{$('effIn').value=e.target.value;setTws();rbSync()});
+$('rbSigNow').onclick=()=>{unlockAudio();setSig5(Date.now());rbSync();raceTick()};
+$('rbSig5').addEventListener('change',e=>{unlockAudio();const v=e.target.value;if(!v)return;const [h,m,x]=v.split(':').map(Number);const d=new Date();d.setHours(h,m,x||0,0);setSig5(d.getTime());rbSync();raceTick()});
+$('rbSigClr').onclick=()=>{RACE.start=null;RACE.fin=null;saveRace();sig5Show();showResult();rbSync();raceTick()};
+$('rbFin').onclick=()=>$('finBtn').onclick();
+let LEGFILL=false;$('legBtn').onclick=()=>{const lp=$('legPop');if(!LEGFILL){$('legPopBody').innerHTML=document.querySelector('#legendBox .legend').innerHTML.replace(/ id="[^"]*"/g,'');LEGFILL=true}lp.hidden=!lp.hidden;$('legBtn').setAttribute('aria-pressed',lp.hidden?'false':'true')};
+$('legPopX').onclick=()=>{$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false')};
+function rbClock(now){const el=$('rbClock');if(!document.body.classList.contains('race')||!RACE.start){el.hidden=true;return}
+  el.hidden=false;const pre=now<RACE.start;el.classList.toggle('run',!pre&&!RACE.fin);
+  if(pre){const sec=Math.ceil((RACE.start-now)/1000);$('rbClkLab').textContent='START OVER';$('rbClkT').textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;$('rbClkAt').textContent='start '+tStr(RACE.start);$('rbFin').hidden=true;el.classList.toggle('soon',sec<=60&&sec>10);el.classList.toggle('now',sec<=10);el.classList.remove('go');return}
+  el.classList.remove('soon','now');const goNow=!RACE.fin&&now-RACE.start<8000;el.classList.toggle('go',goNow);
+  $('rbClkLab').textContent=RACE.fin?'GEZEILD':(goNow?'START!':'RACE');$('rbClkT').textContent=hms((RACE.fin||now)-RACE.start);$('rbClkAt').textContent=RACE.fin?'finish '+tStr(RACE.fin):'start '+tStr(RACE.start);$('rbFin').hidden=!!RACE.fin}
+$('rbTwdR').addEventListener('input',e=>{$('rbTwd').textContent=pad3(+e.target.value)});
+$('rbTwdR').addEventListener('change',e=>{setTwd(+e.target.value);rbSync()});
+$('rbTwsR').addEventListener('input',e=>{$('rbTws').textContent=e.target.value+' kn'});
+$('rbTwsR').addEventListener('change',e=>{$('twsIn').value=e.target.value;setTws();rbSync()});
+function markCurLeg(scroll){const i=G.on?NAV.leg:-1;document.querySelectorAll('#lpBody tr').forEach(tr=>tr.classList.toggle('cur',+tr.dataset.i===i&&!tr.classList.contains('subrow')));
+  document.querySelectorAll('#course .leg').forEach(p=>p.classList.toggle('curleg',+p.dataset.i===i));
+  if(scroll&&i>=0){const tr=document.querySelector('#lpBody tr.cur');if(tr){const box=tr.closest('.inner');if(box)box.scrollTop=Math.max(0,tr.offsetTop-box.clientHeight/3)}}}
 function cdTick(){if(!G.on)return;if(RACE.start&&Date.now()<RACE.start&&!G.demo){const sec=Math.ceil((RACE.start-Date.now())/1000);$('gCd').textContent=`−${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;$('gCdTo').textContent=`tot de start (${tStr(RACE.start)})`;$('gCdSrc').textContent='startprocedure';$('gCdBox').classList.toggle('soon',sec<=60&&sec>10);$('gCdBox').classList.toggle('now',sec<=10);return}
   if($('gCdTo').textContent.startsWith('tot de start')){$('gCdTo').textContent='';try{gpsUpdate()}catch(e){}return}
   if(G.cdTarget==null)return;const sec=Math.max(0,Math.round((G.cdTarget-Date.now())/1000));spiAlert();
@@ -1601,16 +1674,16 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
 function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';if(e.code===1||!(G.msgHold>Date.now()))$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(G.on&&document.visibilityState==='visible')wake()});
-function gpsStart(){raceMode(true);setTimeout(showResult,0);if(RACE.start&&Date.now()<RACE.start){G.started=false;NAV.leg=0}if(G.demo)demoStop();G.trail=[];G.prev=null;G.vmc=null;G.cdTarget=null;$('gCd').textContent='--:--';hudPanel(true);
+function gpsStart(){setTimeout(showResult,0);if(RACE.start&&Date.now()<RACE.start){G.started=false;NAV.leg=0}if(G.demo)demoStop();G.trail=[];G.prev=null;G.vmc=null;G.cdTarget=null;$('gCd').textContent='--:--';hudPanel(true);
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');
   if(!('geolocation' in navigator)){$('gMsg').textContent='Deze browser geeft geen locatie door.';return}
   if(window.isSecureContext===false){$('gMsg').textContent='Locatie werkt alleen via https (bijv. de GitHub-link).'}
   G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;
   gpsEls();$('gpsL').style.display='';$('gTo').textContent='Zoekt GPS…';
   G.watch=navigator.geolocation.watchPosition(gpsFix,gpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});wake()}
-function gpsStop(keepMsg){raceMode(false);if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone=null;hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
+function gpsStop(keepMsg){if(CURTAB==='Race'&&!keepMsg){G.on=false;setTimeout(()=>setTab('Kaart'),0)}if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone=null;hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
-function hudPanel(on){if(window.innerWidth<760)return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
+function hudPanel(on){if(window.innerWidth<760||CURTAB==='Race')return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
 // proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
 let DEMO_SPD=10;try{const v=+localStorage.getItem('wc_demospd');if(v===10||v===60)DEMO_SPD=v}catch(e){}
 function demoSpd(){return DEMO_SPD}
@@ -1629,7 +1702,7 @@ function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.
 function demoStop(){clearInterval(G.demoTimer);G.demoTimer=null;G.demo=false;$('gDemo').setAttribute('aria-pressed','false')}
 $('gDemoSpd').value=String(DEMO_SPD);$('gDemoSpd').onchange=e=>{DEMO_SPD=+e.target.value;try{localStorage.setItem('wc_demospd',DEMO_SPD)}catch(_){}};
 $('gDemo').onclick=()=>{try{G.ac&&G.ac.resume()}catch(_){}if(G.demo){demoStop();gpsStop()}else demoStart()};
-$('gpsBtn').onclick=()=>{unlockAudio();G.on?gpsStop():gpsStart()};
+$('gpsBtn').onclick=()=>{setTab(CURTAB==='Race'?'Kaart':'Race')};
 $('gStop').onclick=()=>gpsStop();
 $('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else{vb.x=G.xy[0]-vb.w/2;vb.y=G.xy[1]-vb.h/2;applyVB()}}};
 
@@ -1856,7 +1929,14 @@ async function makeGpx(){
   finally{btn.disabled=false}}
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
-function setTab(t){['Kaart','Deeln'].forEach(k=>{$('tab'+k).hidden=k!==t;$('tb'+k).setAttribute('aria-selected',k===t?'true':'false')});try{localStorage.setItem('wc_tab',t)}catch(e){};if(t==='Kaart')applyVB();else renderFleet()}
+let CURTAB='Kaart',PREVSTYLE=null;
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+  const prev=CURTAB;CURTAB=t;try{localStorage.setItem('wc_tab',t)}catch(e){}
+  raceMode(t==='Race');
+  if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
+  if(t==='Race'){if(prev!=='Race'){PREVSTYLE=mapStyle;if(mapStyle!=='chart')setStyle('chart')}unlockAudio();const lp=$('legsPanel');lp.open=true;if(!G.on)gpsStart();rbSync();setTimeout(()=>{applyVB();markCurLeg(true)},30)}
+  else if(t==='Kaart'){if(G.on)gpsStop();applyVB()}
+  else renderFleet()}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 // ---------- deelnemers & marges ----------
 const FLEETS={dm:[{"sail": "796", "boat": "Bierkaai", "type": "Lutra 40", "f": 1.0594, "src": "uitslag [verified]"}, {"sail": "257", "boat": "Dehlicious", "type": "Dehler 42", "f": 1.0322, "src": "uitslag [verified]"}, {"sail": "769", "boat": "Athoma", "type": "Dehler 30 OD", "f": 1.02, "src": "uitslag [verified]"}, {"sail": "750", "boat": "Corto Maltese", "type": "Dehler 38 JV", "f": 1.0, "src": "uitslag [verified]"}, {"sail": "603", "boat": "Bubbels", "type": "Dehler 36 sq", "f": 0.9996, "src": "uitslag [verified]"}, {"sail": "171", "boat": "A Boen!!", "type": "Grand Soleil 34", "f": 0.9989, "src": "uitslag [verified]"}, {"sail": "799", "boat": "SEELIG", "type": "Dehler 38 JV", "f": 0.995, "src": "uitslag [verified]"}, {"sail": "794", "boat": "ZARAFA", "type": "HOD 35", "f": 0.9925, "src": "uitslag [verified]"}, {"sail": "7822", "boat": "Dream Machine", "type": "Elan 380", "f": 0.9894, "src": "afgeleid [Inference]"}, {"sail": "774", "boat": "Chicago", "type": "Grand Surprise", "f": 0.98, "src": "uitslag [verified]"}, {"sail": "618", "boat": "Julie Louise", "type": "First 36.7", "f": 0.9767, "src": "uitslag [verified]"}, {"sail": "301", "boat": "IMP", "type": "Sun Fast 36", "f": 0.97, "src": "uitslag [verified]"}, {"sail": "731", "boat": "X-Challenge", "type": "X-372 Sport", "f": 0.9685, "src": "uitslag [verified]"}, {"sail": "730", "boat": "Joint", "type": "J-108", "f": 0.9646, "src": "uitslag [verified]"}],xp:[{"sail": "ESP 8228", "boat": "Vindio", "type": "Grand Soleil 37 BC", "f": 1.0856, "src": "uitslag ORC 2 race 4"}, {"sail": "NED 6371", "boat": "Overruled", "type": "One off", "f": 0.9708, "src": "uitslag ORC 2 race 4"}, {"sail": "BEL 1206", "boat": "FarFelu", "type": "F&F 915", "f": 1.0207, "src": "uitslag ORC 2 race 4"}, {"sail": "NED 8606", "boat": "Stardust", "type": "Nicholson 43", "f": 0.9716, "src": "uitslag ORC 2 race 4"}, {"sail": "IRL 3208", "boat": "Blizzard of Uz", "type": "SunFast 3200", "f": 1.0761, "src": "uitslag ORC 2 race 4"}, {"sail": "GER 8118", "boat": "Bold & Gracious", "type": "J-99", "f": null, "src": "geen factor (dnf)", "on": false}, {"sail": "NED 2724", "boat": "Zonnewind", "type": "Saffier 27", "f": null, "src": "geen factor (dns)", "on": false}, {"sail": "NED 8862", "boat": "Segundo", "type": "Jeanneau Sun Shine 36", "f": null, "src": "geen factor (dns)", "on": false}]};
@@ -1917,7 +1997,7 @@ $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlM
 
 if(!fits(baan)&&!allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(area));if(k)baan=k}
 fitTo(ALL,0);show(true);
-try{if(localStorage.getItem('wc_tab')==='Deeln')setTab('Deeln')}catch(e){}
+try{const t=localStorage.getItem('wc_tab');if(t==='Deeln'||t==='Race')setTab(t)}catch(e){}
 new ResizeObserver(()=>applyVB()).observe(svg);
 </script>
 
