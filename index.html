@@ -169,6 +169,9 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 .stylebar button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 .stylebar button:focus-visible{outline:2px solid var(--route);outline-offset:-2px}
 #tiles image{image-rendering:auto}
+#chart.tiles-on #map.st-chart .land,#chart.tiles-on #map.st-chart{fill:#cfe2ef;background:#cfe2ef}
+#chart.tiles-on #map.st-dim .land,#chart.tiles-on #map.st-photo .land{fill:#4f6f86}
+#chart.tiles-on #map.st-night .land{fill:#0a1118}
 #map.far .mk .lab,#map.far .crs,#map.far .corrlab,#map.far .legno,#map.far .place,#map.far .alab,#map.far .wtag,#map.far #buoys{display:none}
 #map.st-chart #tiles{filter:sepia(.18) saturate(.85)}
 #map.st-night #tiles{filter:invert(1) hue-rotate(180deg) brightness(.55) sepia(.5)}
@@ -770,7 +773,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="htxt">
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
-    <p class="ver" id="appVer">Versie 10 · 9 okt 2026</p>
+    <p class="ver" id="appVer">Versie 11 · 9 okt 2026</p>
     </div>
   </header>
   <nav class="tabs" role="tablist">
