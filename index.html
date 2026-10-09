@@ -171,6 +171,8 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 .gpshud .sub{color:var(--muted);font-size:12px}
 .gpshud .btns{display:flex;gap:6px;margin-top:7px}
 .gpshud .btns button{flex:1;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:5px;padding:5px 0;font-family:var(--f-disp);font-weight:700;cursor:pointer}
+.gpshud .btns button{white-space:nowrap;font-size:13px;padding-left:2px;padding-right:2px}
+.gpshud .btns .dspd{flex:0 0 auto;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:5px;font-family:var(--f-disp);font-weight:700;padding:0 2px}
 .gpshud .btns button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
 .gpshud .ping{margin-top:7px;border-top:1px solid var(--rule);padding-top:5px}
 .gpshud .ping summary{cursor:pointer;font-family:var(--f-disp);font-weight:700;font-size:13.5px}
@@ -796,7 +798,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="htxt">
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
-    <p class="ver" id="appVer">Versie 15 · 9 okt 2026</p>
+    <p class="ver" id="appVer">Versie 16 · 9 okt 2026</p>
     </div>
   </header>
   <nav class="tabs" role="tablist">
@@ -946,7 +948,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="gr"><b id="gBtw">–</b><small>°M</small><b id="gDtw">–</b><small>nm</small></div>
         <div class="sub" id="gRem"></div>
         <div class="sub" id="gPos"></div>
-        <div class="btns"><button id="gFollow" aria-pressed="true">volg boot</button><button id="gDemo" aria-pressed="false" title="Simuleer een boot die de baan vaart">proefvaart</button><button id="gStop">GPS uit</button></div>
+        <div class="btns"><button id="gFollow" aria-pressed="true">volg boot</button><button id="gDemo" aria-pressed="false" title="Simuleer een boot die de baan vaart">proefvaart</button><select id="gDemoSpd" class="dspd" aria-label="Snelheid proefvaart"><option value="10">10×</option><option value="60">60×</option></select><button id="gStop">GPS uit</button></div>
         <div class="msg" id="gMsg"></div>
         <details class="ping" id="pingBox"><summary>Startlijn &amp; gate pingen</summary>
           <div class="pbtns"><button data-p="ship">Startschip</button><button data-p="pin">Pin</button><button data-p="gate">Gate</button></div>
@@ -1493,7 +1495,7 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
    if(v!=null){G.vmc=G.vmc==null?v:G.vmc*0.85+v*0.15}
    const legLen=pr.along+pr.rem||l.nm;let etaH,src;
    if(G.vmc!=null&&G.vmc>0.5){etaH=pr.rem/G.vmc;src='op je snelheid richting boei'}else{etaH=legTime(l)*(pr.rem/(legLen||1));src='schatting polar'}
-   const k=G.demo?60:1;G.cdTarget=Date.now()+etaH*3600000/k;G.cdSrc=src+(G.demo?' · proefvaart ×60':'');
+   const k=G.demo?demoSpd():1;G.cdTarget=Date.now()+etaH*3600000/k;G.cdSrc=src+(G.demo?` · proefvaart ×${k}`:'');
    const markName=NAV.leg===0?'de gate':(NAV.leg===CUR.legs.length-1?'de finish':l.t);
    const side=mk&&mk.s?(mk.auto?` (pass. ${mk.s})`:` (rond ${mk.s})`):'';
    $('gCdTo').textContent=`einde rak ${NAV.leg+1}: ${markName}${side}`;G.cdLeg=NAV.leg;G.pr=pr;cdTick()}
@@ -1502,7 +1504,7 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
   $('gNext').setAttribute('x1',G.xy[0]);$('gNext').setAttribute('y1',G.xy[1]);$('gNext').setAttribute('x2',nx[0]);$('gNext').setAttribute('y2',nx[1]);
   gpsDraw()}
 function spiAlert(){if(!G.on||G.cdTarget==null||!CUR_SPI||!CUR_SPI.ev||!G.pr||G.started===false)return;
-  const li=G.cdLeg,l=CUR.legs[li];if(!l)return;const pr=G.pr;const tEnd=(G.cdTarget-Date.now())/1000*(G.demo?60:1);
+  const li=G.cdLeg,l=CUR.legs[li];if(!l)return;const pr=G.pr;const tEnd=(G.cdTarget-Date.now())/1000*(G.demo?demoSpd():1);
   const polyLen=pr.along+pr.rem,nmSum=l.s.reduce((a,b)=>a+b.nm,0)||polyLen;
   for(const e of CUR_SPI.ev){if(e.li!==li)continue;const key=baan+'|'+twd+'|'+li+'|'+e.kind+'|'+e.lab;if(G.spiDone&&G.spiDone.has(key))continue;
     const at=e.along===Infinity?polyLen:e.along*polyLen/nmSum;const dist=at-pr.along;if(dist<-0.02)continue;
@@ -1554,19 +1556,22 @@ function gpsStop(keepMsg){if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
 function hudPanel(on){if(window.innerWidth<760)return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
 // proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
+let DEMO_SPD=10;try{const v=+localStorage.getItem('wc_demospd');if(v===10||v===60)DEMO_SPD=v}catch(e){}
+function demoSpd(){return DEMO_SPD}
 function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.started=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
   G.on=true;G.demo=true;G.trail=[];G.prev=null;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');$('gDemo').setAttribute('aria-pressed','true');
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');gpsEls();$('gpsL').style.display='';NAV.leg=0;G.adv=0;hudPanel(true);fitTo(startBox,0.6);
   const pts=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0)pts.push(q)}));
-  const KN=6,SPEED=60,DT=1;let seg=0,t=0,simT=Date.now();
+  const KN=6,DT=1;let seg=0,t=0,simT=Date.now();
   const toLLd=(x,y)=>[-y/60+51.74,x/(Math.cos(51.74*Math.PI/180)*60)+3.95];
   clearInterval(G.demoTimer);
-  G.demoTimer=setInterval(()=>{let step=KN*SPEED*DT/3600;
+  G.demoTimer=setInterval(()=>{const SPEED=demoSpd();let step=KN*SPEED*DT/3600;
     while(step>0&&seg<pts.length-1){const a=pts[seg],b=pts[seg+1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const left=L*(1-t);if(step<left){t+=step/L;step=0}else{step-=left;seg++;t=0}}
     if(seg>=pts.length-1){demoStop();$('gMsg').textContent='Proefvaart klaar: finish bereikt.';return}
     const a=pts[seg],b=pts[seg+1];const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;const [la,lo]=toLLd(x,y);simT+=DT*1000*SPEED;
     gpsFix({timestamp:simT,coords:{latitude:la,longitude:lo,accuracy:5,speed:KN/1.943844,heading:brgT(a,b)}})},DT*1000)}
 function demoStop(){clearInterval(G.demoTimer);G.demoTimer=null;G.demo=false;$('gDemo').setAttribute('aria-pressed','false')}
+$('gDemoSpd').value=String(DEMO_SPD);$('gDemoSpd').onchange=e=>{DEMO_SPD=+e.target.value;try{localStorage.setItem('wc_demospd',DEMO_SPD)}catch(_){}};
 $('gDemo').onclick=()=>{try{G.ac&&G.ac.resume()}catch(_){}if(G.demo){demoStop();gpsStop()}else demoStart()};
 $('gpsBtn').onclick=()=>{try{if(!G.ac)G.ac=new (window.AudioContext||window.webkitAudioContext)();G.ac.resume()}catch(_){}G.on?gpsStop():gpsStart()};
 $('gStop').onclick=()=>gpsStop();
