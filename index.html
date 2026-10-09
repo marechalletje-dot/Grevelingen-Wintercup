@@ -125,6 +125,32 @@ td .segs{font-family:var(--f-mono);font-size:12.5px;line-height:1.55}
 td .segs b{font-weight:500;color:var(--ink)}
 .toggles{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px}
 .toggles label{display:flex;gap:5px;align-items:center;cursor:pointer}
+.legnav{position:absolute;left:10px;bottom:40px;z-index:2;display:flex;align-items:stretch;border:1px solid var(--rule);border-radius:7px;overflow:hidden;background:var(--panel);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.legnav button{border:0;background:transparent;color:var(--ink);font-family:var(--f-disp);font-weight:700;font-size:15px;padding:7px 11px;cursor:pointer;min-width:40px}
+.legnav button+button{border-left:1px solid var(--rule)}
+.legnav .lab{min-width:8.5em}
+.legnav.on .lab{background:var(--ink);color:var(--panel)}
+.leginfo{position:absolute;left:10px;bottom:84px;z-index:2;max-width:min(420px,calc(100% - 20px));background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--rule);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:8px 11px;font-size:13.5px;line-height:1.4}
+.leginfo .t{font-family:var(--f-disp);font-weight:700;font-size:16px}
+.leginfo .m{font-family:var(--f-mono)}
+#map.legfocus [data-li]{opacity:.14}
+#map.legfocus [data-li].lf{opacity:1}
+.gpshud{position:absolute;left:10px;top:52px;z-index:3;width:min(250px,calc(100% - 80px));background:color-mix(in srgb,var(--panel) 96%,transparent);border:1px solid var(--rule);border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.18);padding:8px 10px;font-size:12.5px}
+.gpshud .gr{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:0 6px;align-items:baseline}
+.gpshud .gr b{font-family:var(--f-mono);font-size:22px;line-height:1.1}
+.gpshud .gr small{color:var(--muted)}
+.gpshud .to{font-family:var(--f-disp);font-weight:700;font-size:14px;margin:6px 0 2px}
+.gpshud .sub{color:var(--muted);font-size:12px}
+.gpshud .btns{display:flex;gap:6px;margin-top:7px}
+.gpshud .btns button{flex:1;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:5px;padding:5px 0;font-family:var(--f-disp);font-weight:700;cursor:pointer}
+.gpshud .btns button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.gpshud .msg{color:#b3261e;font-size:12px;margin-top:5px}
+.tools button[aria-pressed="true"]{background:#0b6bcb;color:#fff;border-color:#0b6bcb}
+.gpsacc{fill:#0b6bcb;fill-opacity:.12;stroke:#0b6bcb;stroke-opacity:.5}
+.gpsboat{fill:#0b6bcb;stroke:#fff}
+.gpscog{stroke:#0b6bcb;stroke-dasharray:4 3;fill:none}
+.gpstrail{stroke:#0b6bcb;stroke-opacity:.55;fill:none}
+.gpsnext{stroke:#0b6bcb;stroke-opacity:.8;fill:none}
 .stylebar{position:absolute;left:10px;top:10px;z-index:2;display:flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden;background:var(--panel);box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .stylebar button{border:0;background:transparent;color:var(--ink);font-family:var(--f-disp);font-weight:600;font-size:14px;padding:6px 10px;cursor:pointer}
 .stylebar button+button{border-left:1px solid var(--rule)}
@@ -302,6 +328,9 @@ table.dl tr.off td{opacity:.45}
   .chart svg#map{height:68svh;min-height:360px}
   .tools{right:6px;top:6px;gap:5px}.tools button{width:38px;height:38px}.tools button.wide{width:auto;font-size:13px}
   .legs-panel{position:static;width:auto;max-width:none;margin:8px;box-shadow:none}
+  .legnav{top:calc(max(68svh,360px) - 52px);bottom:auto;left:6px}.legnav button{padding:8px 12px;font-size:16px}
+  .leginfo{left:6px;top:calc(max(68svh,360px) - 60px);bottom:auto;transform:translateY(-100%);font-size:12.5px;padding:6px 9px;max-width:calc(100% - 60px)}.leginfo .t{font-size:14px}
+  .gpshud{top:46px;left:6px;width:min(230px,calc(100% - 70px));padding:6px 8px;font-size:11.5px}.gpshud .gr b{font-size:18px}.gpshud .to{font-size:12.5px;margin:3px 0 1px}.gpshud .sub{font-size:11px}.gpshud .btns{margin-top:5px}.gpshud .btns button{padding:4px 0;font-size:13px}
   .legs-panel .inner{max-height:none}
   .log .tbl table{font-size:13px}
   .lp col.c-rd{width:3.3em}.lp col.c-pos{width:2.6em}.lp col.c-twa{width:3.4em}.lp col.c-k{width:3.6em}.lp col.c-no{width:2.2em}
@@ -837,6 +866,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <g id="course"></g>
         <g id="buoys"></g>
         <g id="toplayer"></g>
+        <g id="gpsL"></g>
       </svg>
       <div class="stylebar" id="styleSel" role="group" aria-label="Kaartstijl">
         <button data-st="chart">Kaart</button><button data-st="dim">Lichte foto</button><button data-st="photo">Luchtfoto</button><button data-st="night">Nacht</button>
@@ -848,6 +878,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <button id="fitS" class="wide" aria-label="Zoom op start">start</button>
         <button id="fitF" class="wide" aria-label="Zoom op finish">finish</button>
         <button id="all" class="wide" aria-label="Hele meer">meer</button>
+        <button id="gpsBtn" class="wide" aria-pressed="false" aria-label="Toon GPS-positie">GPS</button>
+      </div>
+      <div class="legnav" id="legNav" role="group" aria-label="Rak-weergave"><button id="lnPrev" aria-label="Vorig rak">◀</button><button id="lnLab" class="lab" aria-label="Rak-weergave aan/uit">Per rak</button><button id="lnNext" aria-label="Volgend rak">▶</button></div>
+      <div class="leginfo" id="legInfo" hidden></div>
+      <div class="gpshud" id="gpsHud" hidden>
+        <div class="gr"><b id="gSog">–</b><small>kn</small><b id="gCog">–</b><small>°M koers</small></div>
+        <div class="to" id="gTo">–</div>
+        <div class="gr"><b id="gBtw">–</b><small>°M</small><b id="gDtw">–</b><small>nm</small></div>
+        <div class="sub" id="gRem"></div>
+        <div class="btns"><button id="gFollow" aria-pressed="true">volg boot</button><button id="gStop">GPS uit</button></div>
+        <div class="msg" id="gMsg"></div>
       </div>
       <div class="scale" id="scale"></div>
       <div class="tip" id="tip" hidden></div>
@@ -1001,6 +1042,7 @@ function applyVB(kOver){
   document.querySelectorAll('.mk .lab').forEach(e=>{e.setAttribute('x',+e.dataset.x+k*12);e.setAttribute('y',+e.dataset.y-k*8)});
   document.querySelectorAll('[data-nx]').forEach(e=>placeLab(e,1,k));
   declutter(k);
+  try{if(G.on)gpsDraw()}catch(e){}
   if(kOver)return;
   const nmPx=1/k; let s=[0.1,0.25,0.5,1,2,5].find(v=>v*nmPx>70)||5;
   $('scale').innerHTML=`<span style="display:inline-block;width:${s*nmPx}px;border-bottom:2px solid currentColor;margin-right:6px"></span>${s} nm`;
@@ -1028,7 +1070,8 @@ svg.addEventListener('pointermove',e=>{if(!drag)return;const prev=ptrs.get(e.poi
   if(ptrs.size===2&&prev){const [a,b]=[...ptrs.values()];const d1=Math.hypot(a[0]-b[0],a[1]-b[1]);const o=[...ptrs.entries()].find(([id])=>id!==e.pointerId)[1];const d0=Math.hypot(prev[0]-o[0],prev[1]-o[1]);if(d0>0){const [x,y]=pt({clientX:(a[0]+b[0])/2,clientY:(a[1]+b[1])/2});zoom(d0/d1,x,y)}drag={x:e.clientX,y:e.clientY,vb:{...vb}};return}
   const [, , k]=pt(e);vb.x=drag.vb.x-(e.clientX-drag.x)*k;vb.y=drag.vb.y-(e.clientY-drag.y)*k;applyVB()});
 const end=e=>{ptrs.delete(e.pointerId);if(!ptrs.size){drag=null;svg.classList.remove('drag')}
-  if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<5){clickAt(e)}down=null};
+  if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<5){const ln=down.t&&down.t.closest&&down.t.closest('.legno');if(ln){setLeg(+ln.dataset.li)}else clickAt(e)}
+  else if(down&&G.on&&G.follow){G.follow=false;$('gFollow').setAttribute('aria-pressed','false')}down=null};
 svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',e=>{down=null;end(e)});
 // buoy tooltip
 let tipAt=null;
@@ -1191,29 +1234,29 @@ function show(fit){
   const labelled=new Set();
   legs.forEach((l,i)=>{
     const d='M'+l.p.map(p=>p.join(',')).join('L');
-    el('path',{class:'halo',d},gh);
+    el('path',{class:'halo',d,'data-li':i},gh);
     const cls=l.kind==='var'?'var':l.via.length?'fw':'';
-    el('path',{class:'leg '+cls,d,'data-i':i},gl);
+    el('path',{class:'leg '+cls,d,'data-i':i,'data-li':i},gl);
     l.p.forEach(([x,y])=>{minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)});
     let longest=-1,LL=0;
     for(let j=1;j<l.p.length;j++){
       const a=l.p[j-1],b=l.p[j];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L>LL){LL=L;longest=j}
       const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;const ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;
       const nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L;
-      if(L>0.12){const ar=el('path',{class:'arrow '+cls,d:'M7,0L-5,-5.5L-2,0L-5,5.5Z','data-s':1},ga);ar.dataset.x=a[0]+(b[0]-a[0])*0.68;ar.dataset.y=a[1]+(b[1]-a[1])*0.68;ar.dataset.a=ang}
+      if(L>0.12){const ar=el('path',{class:'arrow '+cls,d:'M7,0L-5,-5.5L-2,0L-5,5.5Z','data-s':1,'data-li':i},ga);ar.dataset.x=a[0]+(b[0]-a[0])*0.68;ar.dataset.y=a[1]+(b[1]-a[1])*0.68;ar.dataset.a=ang}
       const sg=l.s[j-1];
       let rot=ang;if(rot>90)rot-=180;if(rot<=-90)rot+=180;
-      if(sg&&L>0.22){const t=el('text',{class:'crs'},gt);t.dataset.x=mx;t.dataset.y=my;t.dataset.nx=nx;t.dataset.ny=ny;t.dataset.rot=rot;t.textContent=pad3(sg.mw)}
+      if(sg&&L>0.22){const t=el('text',{class:'crs','data-li':i},gt);t.dataset.x=mx;t.dataset.y=my;t.dataset.nx=nx;t.dataset.ny=ny;t.dataset.rot=rot;t.textContent=pad3(sg.mw)}
     }
     if(longest>0){const a=l.p[longest-1],b=l.p[longest];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);
       let qx=a[0]+(b[0]-a[0])*0.32,qy=a[1]+(b[1]-a[1])*0.32;
       for(const f of [0.62,0.18,0.82,0.45]){if(!LNPOS.some(([x,y])=>Math.hypot(x-qx,y-qy)<0.09))break;qx=a[0]+(b[0]-a[0])*f;qy=a[1]+(b[1]-a[1])*f}
       LNPOS.push([qx,qy]);
-      const n=el('g',{class:'legno'},gn);el('circle',{cx:qx,cy:qy,r:0.01},n);const t=el('text',{x:qx,y:qy,dy:'0.36em'},n);t.textContent=i+1;
+      const n=el('g',{class:'legno','data-li':i},gn);el('circle',{cx:qx,cy:qy,r:0.01},n);const t=el('text',{x:qx,y:qy,dy:'0.36em'},n);t.textContent=i+1;
       // fairway name along the leg
       l.via.forEach((f,vi)=>{const key=f+'|'+i;const nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L;
         let rot2=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(rot2>90)rot2-=180;if(rot2<=-90)rot2+=180;
-        const t2=el('text',{class:'corrlab'},gt);t2.dataset.x=a[0]+(b[0]-a[0])*0.5;t2.dataset.y=a[1]+(b[1]-a[1])*0.5;t2.dataset.nx=-nx;t2.dataset.ny=-ny;t2.dataset.o=16+vi*16;t2.dataset.rot=rot2;t2.textContent='via '+f})}
+        const t2=el('text',{class:'corrlab','data-li':i},gt);t2.dataset.x=a[0]+(b[0]-a[0])*0.5;t2.dataset.y=a[1]+(b[1]-a[1])*0.5;t2.dataset.nx=-nx;t2.dataset.ny=-ny;t2.dataset.o=16+vi*16;t2.dataset.rot=rot2;t2.textContent='via '+f})}
   });
   // start line + gate
   const [sx,sy]=S.start,[gx,gy]=S.gate;const ux=(gx-sx)/0.5,uy=(gy-sy)/0.5;const px=-uy,py=ux;
@@ -1275,9 +1318,113 @@ function show(fit){
   if(!$('tCrs').checked)document.querySelectorAll('.crs').forEach(t=>t.style.display='none');
   CUR={legs,c,S,total,used};
   try{renderFleet()}catch(e){}
-  if(fit)fitTo(curBox);else applyVB();
+  if(LV.baan!==baan){LV.i=-1;LV.baan=baan;NAV.leg=0}
+  if(LV.i>=legs.length)LV.i=-1;if(NAV.leg>=legs.length)NAV.leg=0;
+  markFocus();
+  if(LV.i>=0){if(fit)fitLeg();else applyVB()}else{if(fit)fitTo(curBox);else applyVB()}
+  try{gpsUpdate()}catch(e){}
 }
-function hl(i){document.querySelectorAll('#course .leg').forEach(p=>p.style.opacity=(i<0||+p.dataset.i===i)?1:.25);document.querySelectorAll('#legs tr,#lpBody tr').forEach(r=>r.classList.toggle('hl',+r.dataset.i===i))}
+
+// ---------- per-rak weergave ----------
+const LV={i:-1,baan:null};
+function legBox(l,extra){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const pts=extra?[...l.p,extra]:l.p;for(const [x,y] of pts){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}const m=0.08,MIN=0.6;let w=x1-x0+2*m,h=y1-y0+2*m;const cx=(x0+x1)/2,cy=(y0+y1)/2;w=Math.max(w,MIN);h=Math.max(h,MIN);return {x:cx-w/2,y:cy-h/2,w,h}}
+function fitLeg(){if(!CUR||LV.i<0)return;const l=CUR.legs[LV.i];fitTo(legBox(l,G.on&&G.xy&&G.follow?G.xy:null),0.18)}
+function markFocus(){
+  $('map').classList.toggle('legfocus',LV.i>=0);
+  document.querySelectorAll('#map [data-li]').forEach(e=>e.classList.toggle('lf',+e.dataset.li===LV.i));
+  $('legNav').classList.toggle('on',LV.i>=0);
+  if(!CUR||LV.i<0){$('lnLab').textContent='Per rak';$('legInfo').hidden=true;return}
+  const n=CUR.legs.length,l=CUR.legs[LV.i],c=CUR.c;
+  $('lnLab').textContent=`Rak ${LV.i+1} / ${n}`;
+  const st=l.s.length>1?legStats(l):{mw:l.s[0].mw,tw:l.s[0].tw,span:0};const t=twaOf(st.tw);
+  const mk=LV.i===0?null:(c.marks[LV.i-1]||{});const to=LV.i===0?'Gate (kruisrak)':l.t;
+  const side=mk&&mk.s?(mk.auto?`passeren ${mk.s}`:`ronden ${mk.s}`):(LV.i===0?'door de gate':'finishlijn');
+  $('legInfo').innerHTML=`<div class="t">Rak ${LV.i+1}: ${esc(LV.i===0?'Start':LV.i===1?'Gate':l.f)} → ${esc(to)}</div>
+   ${l.via.length?`<div class="sub">via ${esc(l.via.join(', '))}</div>`:''}
+   <div>Koers <span class="m"><b>${pad3(st.mw)}</b>${st.span>4?' ('+crsRange(st)+')':''}</span> · TWA <span class="m">${Math.round(t.a)}°</span> ${pos(t.a)}</div>
+   <div><span class="m">${l.nm.toFixed(2)} nm</span> · <span class="m">${fmtT(legTime(l))}</span> · ${esc(side)}</div>`;
+  $('legInfo').hidden=false;
+}
+function setLeg(i,refit=true){if(!CUR)return;const n=CUR.legs.length;const was=LV.i;LV.i=i<0?-1:Math.min(n-1,i);
+  if(window.innerWidth>=760){const lp=$('legsPanel');if(was<0&&LV.i>=0){LV.panel=lp.open;lp.open=false}else if(was>=0&&LV.i<0&&LV.panel!=null){lp.open=LV.panel;LV.panel=null}}if(LV.i>=0&&G.on){NAV.leg=LV.i;gpsUpdate()}markFocus();if(refit){if(LV.i>=0)fitLeg();else fitTo(curBox)}}
+$('lnPrev').onclick=()=>setLeg(LV.i<0?0:Math.max(0,LV.i-1));
+$('lnNext').onclick=()=>setLeg(LV.i<0?0:LV.i+1);
+$('lnLab').onclick=()=>setLeg(LV.i<0?(G.on?NAV.leg:0):-1);
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test((e.target.tagName||''))||$('tabKaart').hidden)return;
+  if(e.key==='ArrowRight'&&LV.i>=0){setLeg(LV.i+1);e.preventDefault()}else if(e.key==='ArrowLeft'&&LV.i>=0){setLeg(Math.max(0,LV.i-1));e.preventDefault()}else if(e.key==='Escape'&&LV.i>=0){setLeg(-1)}});
+document.getElementById('lpBody').addEventListener('click',e=>{const td=e.target.closest('td.no');if(!td)return;const tr=td.closest('tr');e.stopPropagation();setLeg(+tr.dataset.i)},true);
+
+// ---------- GPS ----------
+const G={on:false,watch:null,xy:null,acc:null,sog:null,cog:null,prev:null,trail:[],follow:true,wake:null,last:0};
+const NAV={leg:0};
+const ARRIVE_NM=0.03;   // ~55 m: dichterbij dan dit -> volgend rak
+function llXY(lat,lon){return [(lon-3.95)*Math.cos(51.74*Math.PI/180)*60,-(lat-51.74)*60]}
+function brgT(a,b){return (Math.atan2(b[0]-a[0],-(b[1]-a[1]))*180/Math.PI+360)%360}
+function gpsEls(){const g=$('gpsL');if(g.firstChild)return;
+  el('polyline',{class:'gpstrail',id:'gTrail',points:''},g);
+  el('line',{class:'gpsnext',id:'gNext',style:'stroke-width:0'},g);
+  el('circle',{class:'gpsacc',id:'gAcc',r:0},g);
+  el('line',{class:'gpscog',id:'gCogL',style:'display:none'},g);
+  el('path',{class:'gpsboat',id:'gBoat',d:'M10,0L-7,6.5L-3.5,0L-7,-6.5Z'},g)}
+function gpsDraw(){if(!G.xy)return;const k=K;const [x,y]=G.xy;
+  $('gAcc').setAttribute('cx',x);$('gAcc').setAttribute('cy',y);$('gAcc').setAttribute('r',Math.max(G.acc||0,1)/1852);$('gAcc').style.strokeWidth=k*1+'px';
+  const a=(G.cog==null?0:G.cog)-90;$('gBoat').setAttribute('transform',`translate(${x},${y}) rotate(${a}) scale(${k*1.5})`);$('gBoat').style.strokeWidth=1.2/1.5+'px';$('gBoat').style.opacity=G.cog==null?0.6:1;
+  const L=0.25;if(G.cog!=null){const r=G.cog*Math.PI/180;$('gCogL').setAttribute('x1',x);$('gCogL').setAttribute('y1',y);$('gCogL').setAttribute('x2',x+Math.sin(r)*L);$('gCogL').setAttribute('y2',y-Math.cos(r)*L);$('gCogL').style.strokeWidth=k*2+'px';$('gCogL').style.strokeDasharray=`${k*6} ${k*4}`;$('gCogL').style.display=''}else $('gCogL').style.display='none';
+  $('gTrail').setAttribute('points',G.trail.map(p=>p.join(',')).join(' '));$('gTrail').style.strokeWidth=k*2+'px';
+  $('gNext').style.strokeWidth=k*1.6+'px';$('gNext').style.strokeDasharray=`${k*3} ${k*3}`}
+function legProgress(l,xy){let best=null,acc=0;
+  for(let j=1;j<l.p.length;j++){const a=l.p[j-1],b=l.p[j];const dx=b[0]-a[0],dy=b[1]-a[1];const L2=dx*dx+dy*dy||1e-12;let t=((xy[0]-a[0])*dx+(xy[1]-a[1])*dy)/L2;t=Math.max(0,Math.min(1,t));
+    const q=[a[0]+dx*t,a[1]+dy*t];const d=Math.hypot(xy[0]-q[0],xy[1]-q[1]);const L=Math.sqrt(L2);
+    if(!best||d<best.d)best={d,j,along:acc+L*t,q};acc+=L}
+  let rem=0;for(let j=best.j;j<l.p.length;j++){const a=j===best.j?best.q:l.p[j-1],b=l.p[j];rem+=Math.hypot(b[0]-a[0],b[1]-a[1])}
+  return {...best,rem,next:l.p[best.j],xte:best.d}}
+function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
+  let l=CUR.legs[NAV.leg];let pr=legProgress(l,G.xy);
+  // aankomst: dicht bij het einde van het rak -> automatisch volgend rak
+  const end=l.p[l.p.length-1];
+  if(Math.hypot(G.xy[0]-end[0],G.xy[1]-end[1])<ARRIVE_NM&&NAV.leg<CUR.legs.length-1&&Date.now()-(G.adv||0)>20000){G.adv=Date.now();NAV.leg++;l=CUR.legs[NAV.leg];pr=legProgress(l,G.xy);if(LV.i>=0){LV.i=NAV.leg;markFocus();fitLeg()}}
+  // volgend routepunt: sla punten over die vlakbij liggen
+  let nx=pr.next;if(Math.hypot(G.xy[0]-nx[0],G.xy[1]-nx[1])<ARRIVE_NM&&pr.j<l.p.length-1)nx=l.p[pr.j+1];
+  const btw=brgT(G.xy,nx),dtw=Math.hypot(nx[0]-G.xy[0],nx[1]-G.xy[1]);
+  const c=CUR.c,mk=NAV.leg===0?null:(c.marks[NAV.leg-1]||{});const to=NAV.leg===0?'Gate':l.t;
+  const isEnd=nx===l.p[l.p.length-1];
+  $('gTo').textContent=`Rak ${NAV.leg+1}/${CUR.legs.length} → ${isEnd?to:'routepunt '+(pr.j)+' van '+(l.p.length-1)}${isEnd&&mk&&mk.s?` (${mk.auto?'pass.':'rond'} ${mk.s})`:''}`;
+  $('gBtw').textContent=pad3(btw-D.decl).replace('°','');$('gDtw').textContent=dtw.toFixed(2);
+  const eta=G.sog>0.5?pr.rem/G.sog:null;
+  $('gRem').textContent=`Rest rak ${pr.rem.toFixed(2)} nm${eta?` · ±${fmtT(eta)}`:''} · ${Math.round(pr.xte*1852)} m naast lijn${isEnd?'':` · daarna ${to}`}`;
+  $('gNext').setAttribute('x1',G.xy[0]);$('gNext').setAttribute('y1',G.xy[1]);$('gNext').setAttribute('x2',nx[0]);$('gNext').setAttribute('y2',nx[1]);
+  gpsDraw()}
+function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const now=p.timestamp||Date.now();
+  if(G.prev){const d=Math.hypot(xy[0]-G.prev.xy[0],xy[1]-G.prev.xy[1]);const dt=(now-G.prev.t)/3600000;
+    if(d*1852>4){G.cogCalc=brgT(G.prev.xy,xy);if(dt>0)G.sogCalc=d/dt;G.prev={xy,t:now}}}
+  else G.prev={xy,t:now};
+  G.xy=xy;G.acc=c.accuracy;
+  G.sog=c.speed!=null&&!isNaN(c.speed)?c.speed*1.943844:(G.sogCalc??null);
+  G.cog=c.heading!=null&&!isNaN(c.heading)&&G.sog>0.5?c.heading:(G.sog==null||G.sog>0.5?(G.cogCalc??null):null);
+  const last=G.trail[G.trail.length-1];if(!last||Math.hypot(xy[0]-last[0],xy[1]-last[1])*1852>8){G.trail.push(xy);if(G.trail.length>3000)G.trail.shift()}
+  $('gSog').textContent=G.sog==null?'–':G.sog.toFixed(1);$('gCog').textContent=G.cog==null?'–':pad3(G.cog-D.decl).replace('°','');
+  $('gMsg').textContent=c.accuracy>50?`Lage nauwkeurigheid (±${Math.round(c.accuracy)} m)`:'';
+  if(xy[0]<ALL.x-2||xy[0]>ALL.x+ALL.w+2||xy[1]<ALL.y-2||xy[1]>ALL.y+ALL.h+2)$('gMsg').textContent='Je bent buiten het kaartgebied (Grevelingen).';
+  gpsUpdate();
+  if(G.follow){if(LV.i>=0&&!G.fitted){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
+}
+function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
+async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(G.on&&document.visibilityState==='visible')wake()});
+function gpsStart(){
+  $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');
+  if(!('geolocation' in navigator)){$('gMsg').textContent='Deze browser geeft geen locatie door.';return}
+  if(window.isSecureContext===false){$('gMsg').textContent='Locatie werkt alleen via https (bijv. de GitHub-link).'}
+  G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;
+  gpsEls();$('gpsL').style.display='';$('gTo').textContent='Zoekt GPS…';
+  G.watch=navigator.geolocation.watchPosition(gpsFix,gpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});wake()}
+function gpsStop(keepMsg){if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
+  $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
+$('gpsBtn').onclick=()=>G.on?gpsStop():gpsStart();
+$('gStop').onclick=()=>gpsStop();
+$('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else{vb.x=G.xy[0]-vb.w/2;vb.y=G.xy[1]-vb.h/2;applyVB()}}};
+
+function hl(i){document.querySelectorAll('#course .leg').forEach(p=>p.style.opacity=i<0?'':(+p.dataset.i===i?1:.25));document.querySelectorAll('#legs tr,#lpBody tr').forEach(r=>r.classList.toggle('hl',+r.dataset.i===i))}
 // ---------- PDF A3 ----------
 let CUR=null,CUR_SPI=null;
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`)){res();return}const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('script'));document.head.appendChild(s)})}
