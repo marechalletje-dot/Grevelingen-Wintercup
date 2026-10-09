@@ -148,6 +148,12 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 #map.legfocus [data-li]{opacity:.14}
 #map.legfocus [data-li].lf{opacity:1}
 .gpshud{position:absolute;left:10px;top:52px;z-index:3;width:min(250px,calc(100% - 80px));background:color-mix(in srgb,var(--panel) 96%,transparent);border:1px solid var(--rule);border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.18);padding:8px 10px;font-size:12.5px}
+.spipop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;width:min(340px,calc(100% - 30px));background:var(--panel);border:3px solid #e06a00;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:14px 16px;text-align:center}
+.spipop .sp-k{font-family:var(--f-disp);font-weight:700;font-size:40px;line-height:1.05;color:#c25a00}
+.spipop .sp-side{font-family:var(--f-disp);font-weight:700;font-size:40px;line-height:1.05;margin:0 0 12px}
+.spipop .sp-side.bb{color:var(--red)}.spipop .sp-side.sb{color:var(--green)}
+.spipop .sp-t{font-size:14.5px;margin-bottom:10px}
+.spipop button{font-family:var(--f-disp);font-weight:700;font-size:17px;padding:8px 26px;border:0;border-radius:7px;background:var(--ink);color:var(--panel);cursor:pointer}
 .gpshud .cd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:5px;margin-bottom:5px}
 .gpshud .cdl{display:flex;align-items:baseline;gap:5px}
 .gpshud #gCd{font-family:var(--f-mono);font-weight:700;font-size:34px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -164,6 +170,13 @@ header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85
 .gpshud .btns{display:flex;gap:6px;margin-top:7px}
 .gpshud .btns button{flex:1;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:5px;padding:5px 0;font-family:var(--f-disp);font-weight:700;cursor:pointer}
 .gpshud .btns button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.gpshud .ping{margin-top:7px;border-top:1px solid var(--rule);padding-top:5px}
+.gpshud .ping summary{cursor:pointer;font-family:var(--f-disp);font-weight:700;font-size:13.5px}
+.gpshud .pbtns{display:flex;gap:5px;margin:6px 0 4px}
+.gpshud .pbtns button{flex:1;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:5px;padding:6px 0;font-family:var(--f-disp);font-weight:700;cursor:pointer}
+.gpshud .pbtns button.ok{background:var(--chipOn);color:var(--chipOnFg);border-color:var(--chipOn)}
+.gpshud .lnk{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:2px 0;font-size:11.5px}
+.pingmk{fill:#fff;stroke:#0b6bcb}.pinglab{font-family:var(--f-disp);font-weight:700;fill:#0b6bcb;paint-order:stroke;stroke:#fff}
 .gpshud .msg{color:#b3261e;font-size:12px;margin-top:5px}
 .tools button[aria-pressed="true"]{background:#0b6bcb;color:#fff;border-color:#0b6bcb}
 .gpsacc{fill:#0b6bcb;fill-opacity:.12;stroke:#0b6bcb;stroke-opacity:.5}
@@ -781,7 +794,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="htxt">
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
-    <p class="ver" id="appVer">Versie 12 · 9 okt 2026</p>
+    <p class="ver" id="appVer">Versie 14 · 9 okt 2026</p>
     </div>
   </header>
   <nav class="tabs" role="tablist">
@@ -920,6 +933,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       </div>
       <div class="legnav" id="legNav" role="group" aria-label="Rak-weergave"><button id="lnPrev" aria-label="Vorig rak">◀</button><button id="lnLab" class="lab" aria-label="Rak-weergave aan/uit">Per rak</button><button id="lnNext" aria-label="Volgend rak">▶</button></div>
       <div class="leginfo" id="legInfo" hidden></div>
+      <div class="spipop" id="spiPop" hidden role="alertdialog" aria-live="assertive"><div class="sp-k" id="spK"></div><div class="sp-side" id="spSide"></div><button id="spOk">OK</button></div>
       <div class="gpshud" id="gpsHud" hidden>
         <div class="cd" id="gCdBox"><div class="cdl"><span id="gCd">--:--</span><small id="gCdSrc"></small></div><div class="cdt" id="gCdTo">tot volgende boei</div></div>
         <div class="gr"><b id="gSog">–</b><small>kn</small><b id="gCog">–</b><small>°M koers</small></div>
@@ -929,6 +943,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="sub" id="gPos"></div>
         <div class="btns"><button id="gFollow" aria-pressed="true">volg boot</button><button id="gDemo" aria-pressed="false" title="Simuleer een boot die de baan vaart">proefvaart</button><button id="gStop">GPS uit</button></div>
         <div class="msg" id="gMsg"></div>
+        <details class="ping" id="pingBox"><summary>Startlijn &amp; gate pingen</summary>
+          <div class="pbtns"><button data-p="ship">Startschip</button><button data-p="pin">Pin</button><button data-p="gate">Gate</button></div>
+          <div class="sub" id="pingInfo">Vaar langs het startschip, de pin en de gate en tik op de knop als je ernaast ligt.</div>
+          <button class="lnk" id="pingClear">wis pings</button>
+        </details>
       </div>
       <div class="scale" id="scale"></div>
       <div class="attrib" id="attrib">Kaart © Kadaster / PDOK</div>
@@ -1075,7 +1094,7 @@ function applyVB(kOver){
   .corr{stroke-width:${k*1}px;stroke-dasharray:${k*5} ${k*3}} .corrlab{font-size:${k*14}px;stroke-width:${k*3.5}px}
   .leg{stroke-width:${k*3.2}px} .halo{stroke-width:${k*6.5}px} .leg.var{stroke-dasharray:${k*7} ${k*5}}
   .mk .ring{stroke-width:${k*2.6}px} .mk .lab{font-size:${k*13*fz}px;stroke-width:${k*3.5}px}
-  .crs{font-size:${k*11*fz}px;stroke-width:${k*3.5}px} .gateb,.fbuoy{stroke-width:${k*1}px} .sline,.fline{stroke-width:${k*2}px} .fship{stroke-width:${k*1.2}px}
+  .crs{font-size:${k*11*fz}px;stroke-width:${k*3.5}px} .gateb,.fbuoy{stroke-width:${k*1}px} .pingmk{stroke-width:${k*2.5}px} .sline,.fline{stroke-width:${k*2}px} .fship{stroke-width:${k*1.2}px}
   .wtag{font-size:${k*12}px;stroke-width:${k*3}px} .legno text{font-size:${k*12*LZ(k)}px} .legno circle{stroke-width:${k*2}px}`;
   document.querySelectorAll('.legno circle').forEach(e=>e.setAttribute('r',k*10.5*LZ(k)));
   document.querySelectorAll('[data-r]').forEach(e=>e.setAttribute('r',e.dataset.r*k));
@@ -1176,32 +1195,34 @@ function legStats(l){const mw=cmean(l.s.map(s=>[s.mw,s.nm||0.01])),tw=cmean(l.s.
 function spiPlan(legs){
   // flatten into segments with location names
   const segs=[];
-  legs.forEach((l,i)=>{const ds=l.s.length>1?dispSegs(l):l.s.map((s,j)=>Object.assign({},s,{j}));
-    ds.forEach((sg,q)=>{const t=twaOf(sg.tw);
+  legs.forEach((l,i)=>{const ds=l.s.length>1?dispSegs(l):l.s.map((s,j)=>Object.assign({},s,{j}));let cum=0;
+    ds.forEach((sg,q)=>{const t=twaOf(sg.tw);const c0=cum;cum+=sg.nm;
       const from=q===0?(i===0?'start':i===1?'gate':legs[i].f):(l.wp&&l.wp[sg.j]?l.wp[sg.j]:legs[i].f);
       const to=q===ds.length-1?(i===0?'gate':l.t):(l.wp&&l.wp[sg.j+1]?l.wp[sg.j+1]:l.t);
-      segs.push({leg:i+1,lab:(i+1)+(ds.length>1?String.fromCharCode(97+q):''),spi:t.a>=SPI_MIN,lee:t.side==='SB'?'BB':'SB',from,to,a:t.a,nm:sg.nm})})});
+      segs.push({leg:i+1,lab:(i+1)+(ds.length>1?String.fromCharCode(97+q):''),spi:t.a>=SPI_MIN,lee:t.side==='SB'?'BB':'SB',from,to,a:t.a,nm:sg.nm,first:q===0,last:q===ds.length-1,c0,c1:cum})})});
   // short, broad-reach gaps between spinnaker legs: keep the spi up
   for(let k=1;k<segs.length-1;k++){const g=segs[k];if(!g.spi&&g.a>=SPI_MIN-30&&g.nm<0.3&&segs[k-1].spi&&segs.slice(k+1).find(x=>x.nm>=0.05)?.spi){g.spi=true;g.keep=true}}
   const runs=[];let cur=null;
   segs.forEach(s=>{if(s.spi){if(!cur){cur={segs:[]};runs.push(cur)}cur.segs.push(s)}else cur=null});
   const sideTxt=x=>`<span class="side ${x.toLowerCase()}">${x==='BB'?'bakboord':'stuurboord'} (${x})</span>`;
-  const items=[];
-  if(!runs.length){return {items:[],html:'<div class="none">Geen spinnakerrakken (TWA ≥ '+SPI_MIN+'°) bij deze wind.</div>'}}
+  const items=[],ev=[];
+  if(!runs.length){return {items:[],ev:[],html:'<div class="none">Geen spinnakerrakken (TWA ≥ '+SPI_MIN+'°) bij deze wind.</div>'}}
   const first=runs[0].segs[0];
   items.push({at:'voor start',html:`<span class="act">KLAARLEGGEN</span>spi klaarleggen aan ${sideTxt(first.lee)}: de lijzijde van het eerste spi-rak (${first.lab}).`});
   runs.forEach((r,ri)=>{
     const a=r.segs[0],z=r.segs[r.segs.length-1];
     items.push({at:'rak '+a.lab,html:`<span class="act">HIJSEN</span>bij ${esc(a.from)}, aan ${sideTxt(a.lee)} (lij).`});
+    ev.push({li:a.first?a.leg-2:a.leg-1,along:a.first?Infinity:a.c0,lab:a.lab,kind:'HIJSEN',side:a.lee});
     r.segs.filter(x=>x.keep).forEach(x=>items.push({at:'rak '+x.lab,html:`<span class="act">SPI OP HOUDEN</span>kort ruim stuk (${Math.round(x.a)}°, ${x.nm.toFixed(2)} nm): spi niet strijken.`}));
-    for(let k=1;k<r.segs.length;k++){if(r.segs[k].lee!==r.segs[k-1].lee)items.push({at:'rak '+r.segs[k].lab,html:`<span class="act">GIJPEN</span>bij ${esc(r.segs[k].from)}; spi gaat naar ${sideTxt(r.segs[k].lee)}.`})}
+    for(let k=1;k<r.segs.length;k++){if(r.segs[k].lee!==r.segs[k-1].lee){items.push({at:'rak '+r.segs[k].lab,html:`<span class="act">GIJPEN</span>bij ${esc(r.segs[k].from)}; spi gaat naar ${sideTxt(r.segs[k].lee)}.`});}}
     const nxt=runs[ri+1];
-    if(!nxt){items.push({at:'rak '+z.lab,html:`<span class="act">STRIJKEN</span>vóór ${esc(z.to)}, aan ${sideTxt(z.lee)} (lij). Geen spi-rak meer daarna.`});return}
+    if(!nxt){items.push({at:'rak '+z.lab,html:`<span class="act">STRIJKEN</span>vóór ${esc(z.to)}, aan ${sideTxt(z.lee)} (lij). Geen spi-rak meer daarna.`});ev.push({li:z.leg-1,along:z.last?Infinity:z.c1,lab:z.lab,kind:'STRIJKEN',side:z.lee});return}
     const want=nxt.segs[0].lee;
+    ev.push({li:z.leg-1,along:z.last?Infinity:z.c1,lab:z.lab,kind:'STRIJKEN',side:want});
     if(want===z.lee)items.push({at:'rak '+z.lab,html:`<span class="act">STRIJKEN</span>vóór ${esc(z.to)} aan ${sideTxt(z.lee)} (lijzijde). Ligt dan goed voor het volgende spi-rak ${nxt.segs[0].lab}, ook aan ${sideTxt(want)}.`});
     else items.push({at:'rak '+z.lab,html:`<span class="act">STRIJKEN</span>vóór ${esc(z.to)} aan ${sideTxt(want)}: dat is hier de <b>loefzijde</b> (windward drop). Zo ligt hij klaar voor spi-rak ${nxt.segs[0].lab}, waar ${want} lij is. Lukt loef strijken niet: strijk aan lij en zet tack/schoten om naar ${want} vóór rak ${nxt.segs[0].lab}.`});
   });
-  return {items,html:'<ol>'+items.map(it=>`<li><span class="at">${it.at}</span><span>${it.html}</span></li>`).join('')+'</ol>'};
+  return {items,ev,html:'<ol>'+items.map(it=>`<li><span class="at">${it.at}</span><span>${it.html}</span></li>`).join('')+'</ol>'};
 }
 const OFFS_NM=10/1852;
 function offsetLegs(legs,c){
@@ -1254,8 +1275,13 @@ function twaHtml(tw){const t=twaOf(tw);return `<span class="twa ${t.side.toLower
 function show(fit){
   const c=D.courses[baan];const wk=String((Math.round(twd/5)*5)%360);
   if(!c.pair.includes(area))area=c.pair[0];
-  const S=D.starts[area+'|'+wk];const FIRST=D.first[area+'|'+wk+'|'+c.fk];
-  const BEAT={p:[S.start,S.gate],s:[{nm:0.5,tw:+wk,mw:((+wk-D.decl)%360+360)%360}],nm:0.5,flag:S.frac<0.999?`kruisrak niet overal ≥ ${D.mind} m (${Math.round(S.frac*100)}% van de strook)`:''};
+  let S=D.starts[area+'|'+wk];let FIRST=D.first[area+'|'+wk+'|'+c.fk];
+  let BEAT={p:[S.start,S.gate],s:[{nm:0.5,tw:+wk,mw:((+wk-D.decl)%360+360)%360}],nm:0.5,flag:S.frac<0.999?`kruisrak niet overal ≥ ${D.mind} m (${Math.round(S.frac*100)}% van de strook)`:''};
+  {const sh=pingXY('ship'),pn=pingXY('pin'),gp=pingXY('gate');
+   if((sh&&pn)||gp){S=Object.assign({},S);if(sh&&pn)S.start=[(sh[0]+pn[0])/2,(sh[1]+pn[1])/2];if(gp)S.gate=gp;
+     const seg=(a,b)=>{const tb=brgT(a,b);return {nm:+Math.hypot(b[0]-a[0],b[1]-a[1]).toFixed(2),tw:Math.round(tb),mw:Math.round(((tb-D.decl)%360+360)%360)}};
+     const s0=seg(S.start,S.gate);BEAT={p:[S.start,S.gate],s:[s0],nm:s0.nm,flag:''};
+     if(gp){FIRST=JSON.parse(JSON.stringify(FIRST));FIRST.p[0]=gp.slice();FIRST.s[0]=seg(FIRST.p[0],FIRST.p[1]);FIRST.nm=+FIRST.s.reduce((a,b)=>a+b.nm,0).toFixed(2)}}}
   ['A','B','C','D'].forEach(a=>{const b=$('ar'+a);b.disabled=!c.pair.includes(a);b.setAttribute('aria-pressed',a===area?'true':'false')});
   document.querySelectorAll('#areas g').forEach(g=>g.style.display=g.dataset.a===area?'':'none');
   {const inc=new Set(c.marks.map(m=>m.b).filter(Boolean));document.querySelectorAll('#buoys g').forEach(g=>g.classList.toggle('inc',inc.has(g.dataset.n)))}
@@ -1303,10 +1329,13 @@ function show(fit){
         const t2=el('text',{class:'corrlab','data-li':i},gt);t2.dataset.x=a[0]+(b[0]-a[0])*0.5;t2.dataset.y=a[1]+(b[1]-a[1])*0.5;t2.dataset.nx=-nx;t2.dataset.ny=-ny;t2.dataset.o=16+vi*16;t2.dataset.rot=rot2;t2.textContent='via '+f})}
   });
   // start line + gate
-  const [sx,sy]=S.start,[gx,gy]=S.gate;const ux=(gx-sx)/0.5,uy=(gy-sy)/0.5;const px=-uy,py=ux;
-  el('line',{class:'sline',x1:sx-px*0.07,y1:sy-py*0.07,x2:sx+px*0.07,y2:sy+py*0.07},gm);
+  const [sx,sy]=S.start,[gx,gy]=S.gate;const gLen=Math.hypot(gx-sx,gy-sy)||0.5;const ux=(gx-sx)/gLen,uy=(gy-sy)/gLen;const px=-uy,py=ux;
+  {const sh=pingXY('ship'),pn=pingXY('pin');
+   if(sh&&pn){el('line',{class:'sline',x1:sh[0],y1:sh[1],x2:pn[0],y2:pn[1]},gm);
+     for(const [q,lab] of [[sh,'Startschip'],[pn,'Pin']]){el('circle',{class:'pingmk','data-r':5,cx:q[0],cy:q[1]},gm);const t=el('text',{class:'lab'},el('g',{class:'mk'},gm));t.dataset.x=q[0];t.dataset.y=q[1];t.textContent=lab}}
+   else el('line',{class:'sline',x1:sx-px*0.07,y1:sy-py*0.07,x2:sx+px*0.07,y2:sy+py*0.07},gm)}
   for(const s of [-1,1]){el('circle',{class:'gateb','data-r':4.5,cx:gx+px*0.025*s,cy:gy+py*0.025*s},gm)}
-  {const t=el('text',{class:'lab'},el('g',{class:'mk'},gm));t.dataset.x=gx;t.dataset.y=gy;t.textContent='Gate'}
+  {const t=el('text',{class:'lab'},el('g',{class:'mk'},gm));t.dataset.x=gx;t.dataset.y=gy;t.textContent=PINGS.gate?'Gate (gepingd)':'Gate'}
   {const t=el('text',{class:'lab'},el('g',{class:'mk'},gm));t.dataset.x=sx;t.dataset.y=sy;t.textContent='Start'}
   {const tr=twd*Math.PI/180;const wx0=Math.sin(tr),wy0=-Math.cos(tr);const wx=gx+wx0*0.2,wy=gy+wy0*0.2;
    const a=el('path',{class:'arrow fw',d:'M7,0L-5,-5.5L-2,0L-5,5.5Z','data-s':1.6},gm);a.dataset.x=wx-wx0*0.05;a.dataset.y=wy-wy0*0.05;a.dataset.a=Math.atan2(-wy0,-wx0)*180/Math.PI;
@@ -1426,7 +1455,7 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
   let l=CUR.legs[NAV.leg];let pr=legProgress(l,G.xy);
   // aankomst: dicht bij het einde van het rak -> automatisch volgend rak
   let moved=false;
-  for(let guard=0;guard<5&&NAV.leg<CUR.legs.length-1;guard++){
+  for(let guard=0;guard<5&&NAV.leg<CUR.legs.length-1&&!(G.started===false&&NAV.leg===0);guard++){
     const len=pr.along+pr.rem;const nl=CUR.legs[NAV.leg+1];const pr2=legProgress(nl,G.xy);
     const arrived=pr.rem<ARRIVE_NM||(pr.along>0.8*len&&pr2.d+0.005<pr.d);
     if(!arrived)break;NAV.leg++;l=nl;pr=pr2;moved=true}
@@ -1447,12 +1476,26 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
    const k=G.demo?60:1;G.cdTarget=Date.now()+etaH*3600000/k;G.cdSrc=src+(G.demo?' · proefvaart ×60':'');
    const markName=NAV.leg===0?'de gate':(NAV.leg===CUR.legs.length-1?'de finish':l.t);
    const side=mk&&mk.s?(mk.auto?` (pass. ${mk.s})`:` (rond ${mk.s})`):'';
-   $('gCdTo').textContent=`tot ${markName}${side}`;cdTick()}
+   $('gCdTo').textContent=`einde rak ${NAV.leg+1}: ${markName}${side}`;G.cdLeg=NAV.leg;G.pr=pr;cdTick()}
   const eta=G.sog>0.5?pr.rem/G.sog:null;
   $('gRem').textContent=`Rest rak ${pr.rem.toFixed(2)} nm${eta?` · ±${fmtT(eta)}`:''} · ${Math.round(pr.xte*1852)} m naast lijn${isEnd?'':` · daarna ${to}`}`;
   $('gNext').setAttribute('x1',G.xy[0]);$('gNext').setAttribute('y1',G.xy[1]);$('gNext').setAttribute('x2',nx[0]);$('gNext').setAttribute('y2',nx[1]);
   gpsDraw()}
-function cdTick(){if(!G.on||G.cdTarget==null)return;const sec=Math.max(0,Math.round((G.cdTarget-Date.now())/1000));
+function spiAlert(){if(!G.on||G.cdTarget==null||!CUR_SPI||!CUR_SPI.ev||!G.pr||G.started===false)return;
+  const li=G.cdLeg,l=CUR.legs[li];if(!l)return;const pr=G.pr;const tEnd=(G.cdTarget-Date.now())/1000*(G.demo?60:1);
+  const polyLen=pr.along+pr.rem,nmSum=l.s.reduce((a,b)=>a+b.nm,0)||polyLen;
+  for(const e of CUR_SPI.ev){if(e.li!==li)continue;const key=baan+'|'+twd+'|'+li+'|'+e.kind+'|'+e.lab;if(G.spiDone&&G.spiDone.has(key))continue;
+    const at=e.along===Infinity?polyLen:e.along*polyLen/nmSum;const dist=at-pr.along;if(dist<-0.02)continue;
+    const t=pr.rem>0.001?tEnd*Math.max(0,dist)/pr.rem:0;if(t>300)continue;
+    (G.spiDone||(G.spiDone=new Set())).add(key);
+    $('spK').textContent=e.kind==='HIJSEN'?'Hijsen':'Strijken';
+    $('spSide').textContent=e.side==='BB'?'Bakboord':'Stuurboord';$('spSide').className='sp-side '+e.side.toLowerCase();
+    $('spiPop').hidden=false;
+    try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(_){}
+    try{const ac=G.ac||(G.ac=new (window.AudioContext||window.webkitAudioContext)());[0,0.35].forEach(d=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;g.gain.value=0.25;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.25)})}catch(_){}
+    clearTimeout(G.spiTimer);G.spiTimer=setTimeout(()=>{$('spiPop').hidden=true},G.demo?6000:60000);break}}
+$('spOk').onclick=()=>{$('spiPop').hidden=true};
+function cdTick(){if(!G.on||G.cdTarget==null)return;const sec=Math.max(0,Math.round((G.cdTarget-Date.now())/1000));spiAlert();
   const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s2=sec%60;
   $('gCd').textContent=h?`${h}:${String(m).padStart(2,'0')}:${String(s2).padStart(2,'0')}`:`${m}:${String(s2).padStart(2,'0')}`;
   $('gCdSrc').textContent=G.cdSrc||'';$('gCdBox').classList.toggle('soon',sec<=60&&sec>15);$('gCdBox').classList.toggle('now',sec<=15)}
@@ -1461,6 +1504,9 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
   if(G.prev){const d=Math.hypot(xy[0]-G.prev.xy[0],xy[1]-G.prev.xy[1]);const dt=(now-G.prev.t)/3600000;
     if(d*1852>4){G.cogCalc=brgT(G.prev.xy,xy);if(dt>0)G.sogCalc=d/dt;G.prev={xy,t:now}}}
   else G.prev={xy,t:now};
+  if(G.started===false&&G.xy){const sh=pingXY('ship'),pn=pingXY('pin');if(sh&&pn){const dx=pn[0]-sh[0],dy=pn[1]-sh[1];const sd=q=>Math.sign(dx*(q[1]-sh[1])-dy*(q[0]-sh[0]));
+    const a=G.xy,b=xy;if(sd(a)!==sd(b)&&sd(a)!==0){const den=(b[0]-a[0])*dy-(b[1]-a[1])*dx;const t=den?((sh[0]-a[0])*dy-(sh[1]-a[1])*dx)/den:0;const u=((a[0]+(b[0]-a[0])*t-sh[0])*dx+(a[1]+(b[1]-a[1])*t-sh[1])*dy)/(dx*dx+dy*dy);
+      if(u>-0.2&&u<1.2){G.started=true;$('gMsg').style.color='var(--ink)';$('gMsg').textContent='Start! ✓ Startlijn gepasseerd.';G.msgHold=Date.now()+15000}}}}
   G.xy=xy;G.acc=c.accuracy;
   G.sog=c.speed!=null&&!isNaN(c.speed)?c.speed*1.943844:(G.sogCalc??null);
   G.cog=c.heading!=null&&!isNaN(c.heading)&&G.sog>0.5?c.heading:(G.sog==null||G.sog>0.5?(G.cogCalc??null):null);
@@ -1468,13 +1514,13 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
   $('gSog').textContent=G.sog==null?'–':G.sog.toFixed(1);$('gCog').textContent=G.cog==null?'–':pad3(G.cog-D.decl).replace('°','');
   const dm=v=>{const a=Math.abs(v),d=Math.floor(a);return `${d}°${((a-d)*60).toFixed(3)}′`};
   $('gPos').textContent=`${G.demo?'PROEFVAART · ':''}${dm(c.latitude)}${c.latitude>=0?'N':'Z'} ${dm(c.longitude)}${c.longitude>=0?'O':'W'} · ±${Math.round(c.accuracy)} m · ${new Date(now).toLocaleTimeString('nl-NL')}`;
-  $('gMsg').textContent=c.accuracy>50?`Lage nauwkeurigheid (±${Math.round(c.accuracy)} m)`:'';
+  if(!(G.msgHold>Date.now()))$('gMsg').textContent=c.accuracy>50?`Lage nauwkeurigheid (±${Math.round(c.accuracy)} m)`:'';
   G.outside=xy[0]<ALL.x-1||xy[0]>ALL.x+ALL.w+1||xy[1]<ALL.y-1||xy[1]>ALL.y+ALL.h+1;
   if(G.outside){const st=CUR?CUR.S.start:[0,0];const km=Math.hypot(xy[0]-st[0],xy[1]-st[1])*1.852;$('gMsg').style.color='var(--ink)';$('gMsg').textContent=`GPS werkt ✓ — je bent buiten de Grevelingen (${km<100?km.toFixed(1):Math.round(km)} km van de start).`}else $('gMsg').style.color='';
   gpsUpdate();
   if(G.follow){if(G.outside&&!G.outFit){G.outFit=true;const r=svg.getBoundingClientRect();vb.w=3;vb.h=3*(r.height/r.width||0.7)}if(LV.i>=0&&!G.fitted&&!G.outside){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
 }
-function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
+function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';if(e.code===1||!(G.msgHold>Date.now()))$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(G.on&&document.visibilityState==='visible')wake()});
 function gpsStart(){if(G.demo)demoStop();G.trail=[];G.prev=null;G.vmc=null;G.cdTarget=null;$('gCd').textContent='--:--';hudPanel(true);
@@ -1484,11 +1530,11 @@ function gpsStart(){if(G.demo)demoStop();G.trail=[];G.prev=null;G.vmc=null;G.cdT
   G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;
   gpsEls();$('gpsL').style.display='';$('gTo').textContent='Zoekt GPS…';
   G.watch=navigator.geolocation.watchPosition(gpsFix,gpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});wake()}
-function gpsStop(keepMsg){if(G.demo)demoStop();hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
+function gpsStop(keepMsg){if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone=null;hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
 function hudPanel(on){if(window.innerWidth<760)return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
 // proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
-function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
+function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.started=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
   G.on=true;G.demo=true;G.trail=[];G.prev=null;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');$('gDemo').setAttribute('aria-pressed','true');
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');gpsEls();$('gpsL').style.display='';NAV.leg=0;G.adv=0;hudPanel(true);fitTo(startBox,0.6);
   const pts=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0)pts.push(q)}));
@@ -1501,8 +1547,8 @@ function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;if(G.watch!=null)
     const a=pts[seg],b=pts[seg+1];const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;const [la,lo]=toLLd(x,y);simT+=DT*1000*SPEED;
     gpsFix({timestamp:simT,coords:{latitude:la,longitude:lo,accuracy:5,speed:KN/1.943844,heading:brgT(a,b)}})},DT*1000)}
 function demoStop(){clearInterval(G.demoTimer);G.demoTimer=null;G.demo=false;$('gDemo').setAttribute('aria-pressed','false')}
-$('gDemo').onclick=()=>{if(G.demo){demoStop();gpsStop()}else demoStart()};
-$('gpsBtn').onclick=()=>G.on?gpsStop():gpsStart();
+$('gDemo').onclick=()=>{try{G.ac&&G.ac.resume()}catch(_){}if(G.demo){demoStop();gpsStop()}else demoStart()};
+$('gpsBtn').onclick=()=>{try{if(!G.ac)G.ac=new (window.AudioContext||window.webkitAudioContext)();G.ac.resume()}catch(_){}G.on?gpsStop():gpsStart()};
 $('gStop').onclick=()=>gpsStop();
 $('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else{vb.x=G.xy[0]-vb.w/2;vb.y=G.xy[1]-vb.h/2;applyVB()}}};
 
@@ -1547,6 +1593,23 @@ function updateTiles(){
 }
 let tileTimer=null;function scheduleTiles(){clearTimeout(tileTimer);tileTimer=setTimeout(()=>{try{updateTiles()}catch(e){}},60)}
 
+// ---------- start pingen (startschip, pin, gate) ----------
+let PINGS={};try{const v=JSON.parse(localStorage.getItem('wc_ping')||'{}');if(v&&v.t&&Date.now()-v.t<12*3600e3)PINGS=v.p||{}}catch(e){}
+function savePings(){try{localStorage.setItem('wc_ping',JSON.stringify({t:Date.now(),p:PINGS}))}catch(e){}}
+function pingXY(k){const q=PINGS[k];return q?llXY(q.lat,q.lon):null}
+function pingInfo(){document.querySelectorAll('.pbtns button').forEach(b=>b.classList.toggle('ok',!!PINGS[b.dataset.p]));
+  const sh=pingXY('ship'),pn=pingXY('pin'),gt=pingXY('gate');const parts=[];
+  if(sh&&pn){const L=Math.hypot(pn[0]-sh[0],pn[1]-sh[1])*1852;const r=twd*Math.PI/180;const up=q=>q[0]*Math.sin(r)-q[1]*Math.cos(r);
+    const d=(up(pn)-up(sh))*1852;parts.push(`Lijn ${Math.round(L)} m · ${Math.abs(d)<3?'geen kant bevoordeeld':(d>0?'pin':'startschip')+` bevoordeeld (~${Math.round(Math.abs(d))} m)`}`)}
+  if(gt&&sh&&pn){const m=[(sh[0]+pn[0])/2,(sh[1]+pn[1])/2];parts.push(`gate ${(Math.hypot(gt[0]-m[0],gt[1]-m[1])).toFixed(2)} nm, ${pad3(brgT(m,gt)-D.decl)}`)}
+  const n=['ship','pin','gate'].filter(k=>PINGS[k]).length;
+  $('pingInfo').textContent=n?`${n}/3 gepingd. `+parts.join(' · '):'Vaar langs het startschip, de pin en de gate en tik op de knop als je ernaast ligt.'}
+document.querySelectorAll('.pbtns button').forEach(b=>b.onclick=()=>{
+  if(!G.on||!G.xy){$('pingInfo').textContent='Nog geen GPS-positie; wacht even.';return}
+  if(G.acc>30&&!G.demo){$('pingInfo').textContent=`GPS nog te onnauwkeurig (±${Math.round(G.acc)} m); wacht even.`;return}
+  const [la,lo]=xyLL(G.xy[0],G.xy[1]);PINGS[b.dataset.p]={lat:la,lon:lo,acc:G.acc,t:Date.now()};savePings();NAV.leg=0;G.spiDone=null;$('spiPop').hidden=true;G.started=!(PINGS.ship&&PINGS.pin)?null:false;show(false);pingInfo()});
+$('pingClear').onclick=()=>{PINGS={};savePings();G.started=null;show(false);pingInfo()};
+setTimeout(()=>{try{pingInfo()}catch(e){}},0);
 function hl(i){document.querySelectorAll('#course .leg').forEach(p=>p.style.opacity=i<0?'':(+p.dataset.i===i?1:.25));document.querySelectorAll('#legs tr,#lpBody tr').forEach(r=>r.classList.toggle('hl',+r.dataset.i===i))}
 // ---------- PDF A3 ----------
 let CUR=null,CUR_SPI=null;
