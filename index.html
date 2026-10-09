@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wintercup">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1d2a33">
 <title>Wintercup Banenkaart Grevelingen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,6 +133,7 @@ td .segs{font-family:var(--f-mono);font-size:12.5px;line-height:1.55}
 td .segs b{font-weight:500;color:var(--ink)}
 .toggles{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px}
 .toggles label{display:flex;gap:5px;align-items:center;cursor:pointer}
+header p.ver{font-family:var(--f-mono);font-size:12px;margin-top:6px;opacity:.85}
 .legnav{position:absolute;left:10px;bottom:40px;z-index:2;display:flex;align-items:stretch;border:1px solid var(--rule);border-radius:7px;overflow:hidden;background:var(--panel);box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .legnav button{border:0;background:transparent;color:var(--ink);font-family:var(--f-disp);font-weight:700;font-size:15px;padding:7px 11px;cursor:pointer;min-width:40px}
 .legnav button+button{border-left:1px solid var(--rule)}
@@ -315,6 +324,7 @@ table.dl tr.off td{opacity:.45}
 @media (max-width:760px){
   .wrap{padding-block:10px 28px;gap:10px}
   header h1{font-size:24px} header p{font-size:13.5px}
+  header p.ver{font-size:11.5px}
   .main{gap:10px}
   .rail{display:contents}
   .r-wind,.r-course,.r-info,.r-legend,.r-actions{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
@@ -339,7 +349,7 @@ table.dl tr.off td{opacity:.45}
   .lp td .pos{font-size:10px}
 }
 </style>
-<script>window.__STANDALONE__=true;</script>
+<script>window.__STANDALONE__=true;if("serviceWorker" in navigator&&location.protocol==="https:"){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
 <script>/** @license
  *
  * jsPDF - PDF Document creation from JavaScript
@@ -747,6 +757,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <header>
     <h1>Wintercup banenkaart · Grevelingen 2026–2027</h1>
     <p>Banen 51 t/m 90 met genummerde rakken, kompaskoersen en ware windhoek per rak. Het eerste rak is een kruisrak naar een gate 0,5 nm recht in de wind vanaf de start. Rakken door een genoemd vaarwater blijven binnen de betonning; alle rakken blijven in water van minimaal 2,4 m.</p>
+    <p class="ver" id="appVer">Versie 5 · 9 okt 2026</p>
   </header>
   <nav class="tabs" role="tablist">
     <button role="tab" id="tbKaart" data-tab="Kaart" aria-selected="true">Banenkaart</button>
