@@ -1,6 +1,6 @@
 // Wintercup banenkaart - service worker: app altijd eerst vers van het netwerk, offline de laatst opgeslagen versie.
 // Kaarttegels (PDOK) worden bewaard zodra ze bekeken zijn, zodat de kaart ook zonder bereik werkt.
-const CACHE = 'wintercup-v16';
+const CACHE = 'wintercup-v17';
 const TILES = 'wintercup-tiles';
 const MAX_TILES = 4000;
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
