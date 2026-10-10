@@ -252,6 +252,7 @@ const PASS_T='Vaarwaterboei, geen merkteken van de baan. Je passeert hem aan dez
 function sideHtml(m){if(!m||!m.s)return '';return m.auto?`<span class="pill ${sideCls(m.s)} pass" title="${PASS_T}">passeren ${m.s}</span><span class="passnote">vaarwaterboei, geen merkteken</span>`:`<span class="pill ${sideCls(m.s)}">${m.s}</span>`}
 function twaHtml(tw){const t=twaOf(tw);return `<span class="twa ${t.side.toLowerCase()}">${Math.round(t.a)}° ${t.side}</span> <span class="pos">${pos(t.a)}</span>`}
 let SG_SRC={start:'berekend',gate:'berekend'};
+function windInd(){const a=$('wiArrow');if(!a)return;a.setAttribute('transform',`rotate(${ST.twd%360})`);$('wiTxt').textContent=`${pad3(ST.twd)} · ${ST.tws} kn`}
 function show(fit){
   const c=D.courses[ST.baan];const wk=String((Math.round(ST.twd/5)*5)%360);
   if(!c.pair.includes(ST.area))ST.area=c.pair[0];
@@ -326,6 +327,7 @@ function show(fit){
   {const hg=el('g',{class:'sgh-g'},gm);for(const [k,q] of [['gate',S.gate],['start',S.start]])el('circle',{class:'sgh','data-r':15,'data-k':k,cx:q[0],cy:q[1]},hg)}
   {const dc=distCrs(S.start,S.gate,D.decl);if(document.activeElement!==$('sgDist'))$('sgDist').value=dc.nm.toFixed(2);if(document.activeElement!==$('sgCrs'))$('sgCrs').value=Math.round(dc.mw)%360;
    $('sgHint').textContent=`Start ${SG_SRC.start}, gate ${SG_SRC.gate}. Sleep de lichtblauwe cirkels op de kaart om ze te verplaatsen.`;$('sgReset').hidden=!ST.sgAdj[ST.area]}
+  windInd();
   startBox={x:Math.min(sx,gx)-0.15,y:Math.min(sy,gy)-0.15,w:Math.abs(gx-sx)+0.3,h:Math.abs(gy-sy)+0.3};
   // finish (schematic per booklet)
   {const [fx,fy]=D.finish.ship,[bx,by]=D.finish.buoy;
@@ -489,7 +491,7 @@ const RACE={fired:new Set(),
   get start(){return ST.race.start},set start(v){store.set({race:{...ST.race,start:v}})},
   get fin(){return ST.race.fin},set fin(v){store.set({race:{...ST.race,fin:v}})}};
 function saveRace(){}
-function setSig5(ms){RACE.start=ms+300000;RACE.fin=null;RACE.fired=new Set();saveRace();sig5Show();if(Date.now()<RACE.start){G.started=false;NAV.leg=0;G.spiDone=null}$('dlOver').value='';try{showResult()}catch(e){}}
+function setSig5(ms){RACE.start=ms+300000;RACE.fin=null;RACE.fired=new Set();saveRace();sig5Show();if(Date.now()<RACE.start){G.started=false;NAV.leg=0;G.spiDone=null;G.nxDone=null}$('dlOver').value='';try{showResult()}catch(e){}}
 function sig5Show(){if(RACE.start){const d=new Date(RACE.start-300000);$('sig5In').value=d.toTimeString().slice(0,8);$('sig5Hint').textContent=`Start om ${tStr(RACE.start)} · signalen op 4 min, 1 min en 10 s`}else{$('sig5Hint').textContent=''}}
 $('sig5In').addEventListener('change',e=>{const v=e.target.value;if(!v){RACE.start=null;saveRace();sig5Show();return}const [h,m,x]=v.split(':').map(Number);const d=new Date();d.setHours(h,m,x||0,0);setSig5(d.getTime())});
 $('sig5Now').onclick=()=>{unlockAudio();setSig5(Date.now())};
@@ -541,11 +543,25 @@ function markCurLeg(scroll){const i=G.on?NAV.leg:-1;document.querySelectorAll('#
   if(scroll&&i>=0){const tr=document.querySelector('#lpBody tr.cur');if(tr){const box=tr.closest('.inner');if(box)box.scrollTop=Math.max(0,tr.offsetTop-box.clientHeight/3)}}}
 function cdTick(){if(!G.on)return;if(RACE.start&&Date.now()<RACE.start&&!G.demo){const sec=Math.ceil((RACE.start-Date.now())/1000);$('gCd').textContent=`−${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;$('gCdTo').textContent=`tot de start (${tStr(RACE.start)})`;$('gCdSrc').textContent='startprocedure';$('gCdBox').classList.toggle('soon',sec<=60&&sec>10);$('gCdBox').classList.toggle('now',sec<=10);return}
   if($('gCdTo').textContent.startsWith('tot de start')){$('gCdTo').textContent='';try{gpsUpdate()}catch(e){}return}
-  if(G.cdTarget==null)return;const sec=Math.max(0,Math.round((G.cdTarget-Date.now())/1000));spiAlert();
+  if(G.cdTarget==null)return;const sec=Math.max(0,Math.round((G.cdTarget-Date.now())/1000));spiAlert();nextAlert(sec);
   const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s2=sec%60;
   $('gCd').textContent=h?`${h}:${String(m).padStart(2,'0')}:${String(s2).padStart(2,'0')}`:`${m}:${String(s2).padStart(2,'0')}`;
   $('gCdSrc').textContent=G.cdSrc||'';$('gCdBox').classList.toggle('soon',sec<=60&&sec>15);$('gCdBox').classList.toggle('now',sec<=15)}
 setInterval(cdTick,500);
+// ---------- 2 minuten voor het einde van het rak: koers en TWA van het volgende rak (pop-up + stem) ----------
+const NEXT_LEAD=120;
+function nextAlert(sec){if(!G.on||G.started===false||!CUR||G.cdTarget==null)return;const i=NAV.leg;if(sec>NEXT_LEAD||G.nxDone===i)return;
+  G.nxDone=i;const n=CUR.legs[i+1];
+  if(!n){showNext('Nog 2 minuten','Finish','');say('Nog 2 minuten tot de finish');return}
+  const st=legStats(n),t=twaOf(st.tw),k=Math.round(st.mw)%360,a=Math.round(t.a);const side=t.side==='SB'?'stuurboord':'bakboord';
+  showNext(`Volgend rak ${i+2} → ${esc(n.t)}`,pad3(k)+'<small style="font-size:.45em">M</small>',`TWA ${a}° <span class="${t.side.toLowerCase()}">${t.side}</span><small>${pos(a)}</small>`);
+  say(`Over 2 minuten rak ${i+2}. Koers ${String(k).padStart(3,'0').split('').join(' ')}. T W A ${a}, ${side}.`)}
+function showNext(h,k,t){$('nxH').innerHTML=h;$('nxK').innerHTML=k;$('nxT').innerHTML=t;$('nxtPop').hidden=false;
+  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(_){}clearTimeout(G.nxTimer);G.nxTimer=setTimeout(()=>{$('nxtPop').hidden=true},G.demo?8000:30000)}
+$('nxOk').onclick=()=>{$('nxtPop').hidden=true};
+// ---------- alleen kaart (racemodus) ----------
+function mapOnly(on){document.body.classList.toggle('maponly',on);$('mapOnly').setAttribute('aria-pressed',on?'true':'false');$('mapOnly').textContent=on?'vensters':'alleen kaart';setTimeout(()=>{try{applyVB()}catch(e){}},30)}
+$('mapOnly').onclick=()=>mapOnly(!document.body.classList.contains('maponly'));
 function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const now=p.timestamp||Date.now();
   if(G.prev){const d=Math.hypot(xy[0]-G.prev.xy[0],xy[1]-G.prev.xy[1]);const dt=(now-G.prev.t)/3600000;
     if(d*1852>4){G.cogCalc=brgT(G.prev.xy,xy);if(dt>0)G.sogCalc=d/dt;G.prev={xy,t:now}}}
@@ -576,12 +592,12 @@ function gpsStart(){setTimeout(showResult,0);if(RACE.start&&Date.now()<RACE.star
   G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;
   gpsEls();$('gpsL').style.display='';$('gTo').textContent='Zoekt GPS…';
   G.watch=navigator.geolocation.watchPosition(gpsFix,gpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});wake()}
-function gpsStop(keepMsg){if(ST.tab==='Race'&&!keepMsg){G.on=false;setTimeout(()=>setTab('Kaart'),0)}if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone=null;hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
+function gpsStop(keepMsg){if(ST.tab==='Race'&&!keepMsg){G.on=false;setTimeout(()=>setTab('Kaart'),0)}if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone=null;G.nxDone=null;hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
 function hudPanel(on){if(window.innerWidth<760||ST.tab==='Race')return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
 // proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
 function demoSpd(){return ST.demoSpd}
-function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.started=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
+function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.nxDone=null;G.started=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
   G.on=true;G.demo=true;G.trail=[];G.prev=null;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');$('gDemo').setAttribute('aria-pressed','true');
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');gpsEls();$('gpsL').style.display='';NAV.leg=0;G.adv=0;hudPanel(true);fitTo(startBox,0.6);
   const pts=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0)pts.push(q)}));
@@ -652,7 +668,7 @@ function pingInfo(){document.querySelectorAll('.pbtns button').forEach(b=>b.clas
 document.querySelectorAll('.pbtns button').forEach(b=>b.onclick=()=>{
   if(!G.on||!G.xy){$('pingInfo').textContent='Nog geen GPS-positie; wacht even.';return}
   if(G.acc>30&&!G.demo){$('pingInfo').textContent=`GPS nog te onnauwkeurig (±${Math.round(G.acc)} m); wacht even.`;return}
-  const [la,lo]=xyLL(G.xy[0],G.xy[1]);ST.pings[b.dataset.p]={lat:la,lon:lo,acc:G.acc,t:Date.now()};savePings();NAV.leg=0;G.spiDone=null;$('spiPop').hidden=true;G.started=!(ST.pings.ship&&ST.pings.pin)?null:false;show(false);pingInfo()});
+  const [la,lo]=xyLL(G.xy[0],G.xy[1]);ST.pings[b.dataset.p]={lat:la,lon:lo,acc:G.acc,t:Date.now()};savePings();NAV.leg=0;G.spiDone=null;G.nxDone=null;$('spiPop').hidden=true;G.started=!(ST.pings.ship&&ST.pings.pin)?null:false;show(false);pingInfo()});
 $('pingClear').onclick=()=>{ST.pings={};savePings();G.started=null;show(false);pingInfo()};
 setTimeout(()=>{try{pingInfo()}catch(e){}},0);
 function hl(i){document.querySelectorAll('#course .leg').forEach(p=>p.style.opacity=i<0?'':(+p.dataset.i===i?1:.25));document.querySelectorAll('#legs tr,#lpBody tr').forEach(r=>r.classList.toggle('hl',+r.dataset.i===i))}
@@ -825,7 +841,7 @@ $('gpxBtn').onclick=makeGpx;
 let PREVSTYLE=null;
 function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
-  raceMode(t==='Race');
+  raceMode(t==='Race');if(t!=='Race')mapOnly(false);
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
   if(t==='Race'){if(prev!=='Race'){PREVSTYLE=ST.mapStyle;if(ST.mapStyle!=='chart')setStyle('chart')}unlockAudio();const lp=$('legsPanel');lp.open=true;if(!G.on)gpsStart();rbSync();setTimeout(()=>{applyVB();markCurLeg(true)},30)}
   else if(t==='Kaart'){if(G.on)gpsStop();applyVB()}

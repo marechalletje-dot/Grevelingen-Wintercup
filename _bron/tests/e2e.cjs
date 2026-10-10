@@ -27,7 +27,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
     await p.click('#tbRace'); await p.waitForTimeout(400);
     ok(await p.evaluate(() => document.body.classList.contains('race')), `${nm}: racemodus actief`);
     const tools = await p.evaluate(() => [...document.querySelectorAll('.tools button')].filter(e => e.offsetParent).map(e => e.innerText).join(','));
-    ok(tools === 'baan,start,finish,legenda', `${nm}: knoppen rechts (${tools})`);
+    ok(tools === 'baan,start,finish,legenda,alleen kaart', `${nm}: knoppen rechts (${tools})`);
     await p.evaluate(() => { const r = document.getElementById('rbEffR'); r.value = 90; r.dispatchEvent(new Event('change')); });
     ok(await p.evaluate(() => window.__store.state.eff) === 90, `${nm}: polar-slider zet rendement`);
     await p.evaluate(() => { const r = document.getElementById('rbEffR'); r.value = 100; r.dispatchEvent(new Event('change')); });
