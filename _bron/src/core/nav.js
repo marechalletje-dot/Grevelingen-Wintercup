@@ -22,3 +22,7 @@ const AX = {'noord / zuid':[0,180],'oost / west':[90,270],'noord oost / zuid wes
 export function axesOf(title) { const t = String(title).toLowerCase().replace(/\s+/g, ' ').trim(); return AX[t] || null; }
 /** Past een baan (titel) bij windrichting twd? Binnen 22,5° van een van de assen. */
 export function fitsWind(title, twd) { const ax = axesOf(title); if (!ax) return true; return ax.some(a => Math.abs(((twd - a) % 360 + 540) % 360 - 180) <= 22.5); }
+/** Punt op afstand nm (zeemijl) en ware koers trueDeg vanaf p (kaartcoördinaten in nm, y = -noord). */
+export function offsetNm(p, nm, trueDeg) { const a = trueDeg * Math.PI / 180; return [p[0] + Math.sin(a) * nm, p[1] - Math.cos(a) * nm]; }
+/** Afstand (nm), ware (tw) en magnetische (mw) koers van a naar b. */
+export function distCrs(a, b, decl) { const t = brgT(a, b); return { nm: Math.hypot(b[0] - a[0], b[1] - a[1]), tw: t, mw: norm360(t - decl) }; }

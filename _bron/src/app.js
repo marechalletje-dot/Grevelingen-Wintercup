@@ -2,7 +2,7 @@
 import { perf as corePerf } from './core/polar.js';
 import * as TM from './core/timing.js';
 import { fmtT, fmtMS, hms, manTxt } from './core/timing.js';
-import { llXY, xyLL, brgT, pad3, wname, WIND_NAMES, twaOf as navTwaOf, pos, cmean, fitsWind, KX as KXl } from './core/nav.js';
+import { llXY, xyLL, brgT, pad3, wname, WIND_NAMES, twaOf as navTwaOf, pos, cmean, fitsWind, KX as KXl, offsetNm, distCrs, norm360 } from './core/nav.js';
 import { margins } from './core/rating.js';
 import { dueSignals, clockState } from './core/race.js';
 import { createStore } from './state.js';
@@ -104,6 +104,19 @@ function pt(e){const r=svg.getBoundingClientRect();const k=Math.max(vb.w/r.width
 function toScreen(x,y){const r=svg.getBoundingClientRect(),c=$('chart').getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*k-vb.w)/2,oy=(r.height*k-vb.h)/2;return [(x-vb.x+ox)/k+r.left-c.left,(y-vb.y+oy)/k+r.top-c.top]}
 svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=pt(e);zoom(e.deltaY>0?1.18:1/1.18,x,y)},{passive:false});
 let drag=null,down=null;const ptrs=new Map();
+// start en gate verslepen (vóór het pannen van de kaart)
+function setSG(k,xy){const adj=JSON.parse(JSON.stringify(ST.sgAdj||{}));const a=adj[ST.area]||(adj[ST.area]={});
+  if(CUR){const o=k==='start'?'g':'s';if(!a[o])a[o]=xyLL(...CUR.S[o==='s'?'start':'gate'])}
+  a[k==='start'?'s':'g']=xyLL(xy[0],xy[1]);ST.sgAdj=adj;show(false)}
+svg.addEventListener('pointerdown',e=>{const t=e.target;if(!t.classList||!t.classList.contains('sgh')||document.body.classList.contains('race'))return;
+  e.stopPropagation();e.preventDefault();const k=t.dataset.k;try{svg.setPointerCapture(e.pointerId)}catch(_){}let raf=0,last=null;svg.classList.add('sgdrag');
+  const mv=ev=>{ev.stopPropagation();last=pt(ev);if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(last)setSG(k,last)})};
+  const up=ev=>{ev.stopPropagation();svg.removeEventListener('pointermove',mv,true);svg.removeEventListener('pointerup',up,true);svg.removeEventListener('pointercancel',up,true);svg.classList.remove('sgdrag');if(raf)cancelAnimationFrame(raf);if(last)setSG(k,last)};
+  svg.addEventListener('pointermove',mv,true);svg.addEventListener('pointerup',up,true);svg.addEventListener('pointercancel',up,true)},true);
+function sgFromFields(){if(!CUR)return;const nm=+String($('sgDist').value).replace(',','.'),mc=+String($('sgCrs').value).replace(',','.');if(!(nm>=0.05&&nm<=5)||isNaN(mc))return;
+  const st=CUR.S.start,g=offsetNm(st,nm,norm360(mc+D.decl));const adj=JSON.parse(JSON.stringify(ST.sgAdj||{}));adj[ST.area]={s:xyLL(...st),g:xyLL(...g)};ST.sgAdj=adj;show(false)}
+['sgDist','sgCrs'].forEach(id=>{$(id).addEventListener('change',sgFromFields);$(id).addEventListener('keydown',e=>{if(e.key==='Enter')sgFromFields()})});
+$('sgReset').onclick=()=>{const adj=JSON.parse(JSON.stringify(ST.sgAdj||{}));delete adj[ST.area];ST.sgAdj=adj;show(false)};
 svg.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:e.target};svg.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);drag={x:e.clientX,y:e.clientY,vb:{...vb}};svg.classList.add('drag')});
 svg.addEventListener('pointermove',e=>{if(!drag)return;const prev=ptrs.get(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);
   if(ptrs.size===2&&prev){const [a,b]=[...ptrs.values()];const d1=Math.hypot(a[0]-b[0],a[1]-b[1]);const o=[...ptrs.entries()].find(([id])=>id!==e.pointerId)[1];const d0=Math.hypot(prev[0]-o[0],prev[1]-o[1]);if(d0>0){const [x,y]=pt({clientX:(a[0]+b[0])/2,clientY:(a[1]+b[1])/2});zoom(d0/d1,x,y)}drag={x:e.clientX,y:e.clientY,vb:{...vb}};return}
@@ -238,13 +251,17 @@ function boatIcon(tw){const t=twaOf(tw);
 const PASS_T='Vaarwaterboei, geen merkteken van de baan. Je passeert hem aan deze zijde volgens art. 9 (genoemd vaarwater). Of je de hoek mag afsnijden is niet zeker: vraag de wedstrijdleiding.';
 function sideHtml(m){if(!m||!m.s)return '';return m.auto?`<span class="pill ${sideCls(m.s)} pass" title="${PASS_T}">passeren ${m.s}</span><span class="passnote">vaarwaterboei, geen merkteken</span>`:`<span class="pill ${sideCls(m.s)}">${m.s}</span>`}
 function twaHtml(tw){const t=twaOf(tw);return `<span class="twa ${t.side.toLowerCase()}">${Math.round(t.a)}° ${t.side}</span> <span class="pos">${pos(t.a)}</span>`}
+let SG_SRC={start:'berekend',gate:'berekend'};
 function show(fit){
   const c=D.courses[ST.baan];const wk=String((Math.round(ST.twd/5)*5)%360);
   if(!c.pair.includes(ST.area))ST.area=c.pair[0];
   let S=D.starts[ST.area+'|'+wk];let FIRST=D.first[ST.area+'|'+wk+'|'+c.fk];
   let BEAT={p:[S.start,S.gate],s:[{nm:0.5,tw:+wk,mw:((+wk-D.decl)%360+360)%360}],nm:0.5,flag:S.frac<0.999?`kruisrak niet overal ≥ ${D.mind} m (${Math.round(S.frac*100)}% van de strook)`:''};
-  {const sh=pingXY('ship'),pn=pingXY('pin'),gp=pingXY('gate');
-   if((sh&&pn)||gp){S=Object.assign({},S);if(sh&&pn)S.start=[(sh[0]+pn[0])/2,(sh[1]+pn[1])/2];if(gp)S.gate=gp;
+  {const sh=pingXY('ship'),pn=pingXY('pin'),gp0=pingXY('gate');const adj=ST.sgAdj[ST.area]||{};
+   const as=adj.s?llXY(adj.s[0],adj.s[1]):null,ag=adj.g?llXY(adj.g[0],adj.g[1]):null;
+   const ns=(sh&&pn)?[(sh[0]+pn[0])/2,(sh[1]+pn[1])/2]:as,gp=gp0||ag;
+   SG_SRC={start:(sh&&pn)?'gepingd':as?'handmatig':'berekend',gate:gp0?'gepingd':ag?'handmatig':'berekend'};
+   if(ns||gp){S=Object.assign({},S);if(ns)S.start=ns;if(gp)S.gate=gp;
      const seg=(a,b)=>{const tb=brgT(a,b);return {nm:+Math.hypot(b[0]-a[0],b[1]-a[1]).toFixed(2),tw:Math.round(tb),mw:Math.round(((tb-D.decl)%360+360)%360)}};
      const s0=seg(S.start,S.gate);BEAT={p:[S.start,S.gate],s:[s0],nm:s0.nm,flag:''};
      if(gp){FIRST=JSON.parse(JSON.stringify(FIRST));FIRST.p[0]=gp.slice();FIRST.s[0]=seg(FIRST.p[0],FIRST.p[1]);FIRST.nm=+FIRST.s.reduce((a,b)=>a+b.nm,0).toFixed(2)}}}
@@ -306,6 +323,9 @@ function show(fit){
   {const tr=ST.twd*Math.PI/180;const wx0=Math.sin(tr),wy0=-Math.cos(tr);const wx=gx+wx0*0.2,wy=gy+wy0*0.2;
    const a=el('path',{class:'arrow fw',d:'M7,0L-5,-5.5L-2,0L-5,5.5Z','data-s':1.6},gm);a.dataset.x=wx-wx0*0.05;a.dataset.y=wy-wy0*0.05;a.dataset.a=Math.atan2(-wy0,-wx0)*180/Math.PI;
    const t=el('text',{class:'wtag',x:wx+wx0*0.05,y:wy+wy0*0.05},gm);t.textContent=`wind ${ST.twd}°`}
+  {const hg=el('g',{class:'sgh-g'},gm);for(const [k,q] of [['gate',S.gate],['start',S.start]])el('circle',{class:'sgh','data-r':15,'data-k':k,cx:q[0],cy:q[1]},hg)}
+  {const dc=distCrs(S.start,S.gate,D.decl);if(document.activeElement!==$('sgDist'))$('sgDist').value=dc.nm.toFixed(2);if(document.activeElement!==$('sgCrs'))$('sgCrs').value=Math.round(dc.mw)%360;
+   $('sgHint').textContent=`Start ${SG_SRC.start}, gate ${SG_SRC.gate}. Sleep de lichtblauwe cirkels op de kaart om ze te verplaatsen.`;$('sgReset').hidden=!ST.sgAdj[ST.area]}
   startBox={x:Math.min(sx,gx)-0.15,y:Math.min(sy,gy)-0.15,w:Math.abs(gx-sx)+0.3,h:Math.abs(gy-sy)+0.3};
   // finish (schematic per booklet)
   {const [fx,fy]=D.finish.ship,[bx,by]=D.finish.buoy;

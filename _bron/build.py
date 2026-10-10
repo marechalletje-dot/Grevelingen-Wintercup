@@ -40,13 +40,27 @@ PWA = ('<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touc
  '<meta name="apple-mobile-web-app-status-bar-style" content="default">\n<meta name="theme-color" content="#2f4060">\n'
  f'<link rel="preload" href="{data}" as="fetch" crossorigin>\n<link rel="preload" href="{app}" as="script">\n')
 FAIL = 'Laden mislukt. Controleer je verbinding en herlaad.'
+BUILD = H((html + head_css + app + data + aer + open(R + 'assets/apple-touch-icon.png', 'rb').read().hex()[:64]).encode())
 BOOT = ('<div id="bootMsg" style="position:fixed;inset:auto 0 0 0;padding:10px;text-align:center;font:600 14px sans-serif;background:#2f4060;color:#fff;z-index:99">Kaart laden…</div>\n'
  '<script>window.__STANDALONE__=true;window.__JSPDF__="jspdf.umd.min.js";\n'
  'if("serviceWorker" in navigator&&location.protocol==="https:"){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}\n'
  f'function bootFail(){{document.getElementById("bootMsg").textContent="{FAIL}"}}\n'
+ '/* Nieuwe versie? Controleer bij openen en bij terugkeren naar de app; toon dan een balk om bij te werken (nooit automatisch, i.v.m. lopende race). */\n'
+ 'var WC_BUILD=document.documentElement.getAttribute("data-build"),wcLast=0;\n'
+ 'function wcCheck(){if(location.protocol!=="https:")return;var n=Date.now();if(n-wcLast<60000)return;wcLast=n;'
+ 'fetch("index.html?u="+n,{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/data-build="([0-9a-f]+)"/);if(m&&m[1]!==WC_BUILD)wcBar()}).catch(function(){});'
+ 'if(navigator.serviceWorker)navigator.serviceWorker.getRegistration().then(function(g){g&&g.update()}).catch(function(){})}\n'
+ 'function wcBar(){if(document.getElementById("updBar"))return;var d=document.createElement("div");d.id="updBar";'
+ 'd.style.cssText="position:fixed;left:8px;right:8px;top:max(8px,env(safe-area-inset-top));z-index:2000;background:#2f4060;color:#fff;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;font:600 15px sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)";'
+ 'd.innerHTML="<span style=\\"flex:1\\">Nieuwe versie beschikbaar</span><button id=\\"updGo\\" style=\\"border:0;border-radius:7px;padding:8px 14px;font:700 15px sans-serif;background:#fff;color:#2f4060\\">Bijwerken</button><button id=\\"updX\\" style=\\"border:0;background:none;color:#fff;font-size:20px\\">×</button>";'
+ 'document.body.appendChild(d);document.getElementById("updX").onclick=function(){d.remove()};'
+ 'document.getElementById("updGo").onclick=function(){d.textContent="Bijwerken…";var done=function(){location.replace(location.pathname+"?v="+Date.now())};'
+ 'if(!window.caches)return done();caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!=="wintercup-tiles"&&k!=="wintercup-assets"}).map(function(k){return caches.delete(k)}))}).then(done,done)}}\n'
+ 'addEventListener("load",function(){setTimeout(wcCheck,2500)});document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")wcCheck()});\n'
+
  f'fetch("{data}").then(function(r){{if(!r.ok)throw 0;return r.json()}}).then(function(j){{window.__D=j;var s=document.createElement("script");s.src="{app}";'
  's.onload=function(){var m=document.getElementById("bootMsg");m&&m.remove()};s.onerror=bootFail;document.body.appendChild(s)}).catch(bootFail);</script>\n')
-doc = ('<!doctype html>\n<html lang="nl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+doc = (f'<!doctype html>\n<html lang="nl" data-build="{BUILD}">'+'\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
  + PWA + title + head_css + '\n</head>\n<body>\n' + html + BOOT + '</body>\n</html>\n')
 open(out + 'index.html', 'w', encoding='utf-8').write(doc)
 ver = H((doc + app + data + aer).encode())

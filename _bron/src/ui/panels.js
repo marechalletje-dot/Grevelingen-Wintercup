@@ -6,6 +6,7 @@ export const PANELS = [
   { id: 'boot',    sel: '.rail > .r-wind',   title: 'Boot & wind' },
   { id: 'baan',    sel: '.rail > .r-course', title: 'Kies baan' },
   { id: 'gebied',  sel: '.rail > .r-area',   title: 'Startgebied' },
+  { id: 'startgate', sel: '.rail > .r-sg',   title: 'Start & gate' },
   { id: 'info',    sel: '#info',             title: 'Baaninfo' },
   { id: 'legenda', sel: '#legendBox',        title: 'Legenda en lagen', mobileClosed: true },
   { id: 'export',  sel: '.rail > .r-actions', title: 'Export' },
@@ -22,7 +23,7 @@ export const PANELS = [
   { id: 'ug2',     sel: '#tabUitleg > .ug-card:nth-of-type(2)', title: 'Achtergrond: banenkaart' },
   { id: 'ug3',     sel: '#tabUitleg > .ug-card:nth-of-type(3)', title: 'Achtergrond: deelnemers' },
 ];
-const MOBILE_ORDER = ['boot', 'baan', 'gebied', 'kaart', 'info', 'export', 'legenda'];
+const MOBILE_ORDER = ['boot', 'baan', 'gebied', 'kaart', 'startgate', 'info', 'export', 'legenda'];
 const clone = o => JSON.parse(JSON.stringify(o || {}));
 
 export function initPanels({ store, onResize = () => {} }) {

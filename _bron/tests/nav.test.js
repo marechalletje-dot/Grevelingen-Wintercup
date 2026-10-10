@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { llXY, xyLL, brgT, twaOf, wname, pad3, cmean, fitsWind, pos } from '../src/core/nav.js';
+import { llXY, xyLL, brgT, twaOf, wname, pad3, cmean, fitsWind, pos, offsetNm, distCrs } from '../src/core/nav.js';
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
 
 test('llXY en xyLL zijn elkaars inverse', () => {
@@ -26,3 +26,8 @@ test('baan past bij wind binnen 22,5° van de as', () => {
   assert.equal(fitsWind('Oost / West', 300), false); assert.equal(fitsWind('onbekend', 0), true);
 });
 test('koerstypes', () => { assert.equal(pos(30), 'kruisen'); assert.equal(pos(90), 'halve wind'); assert.equal(pos(170), 'voor de wind'); });
+test('gate op 0,5 nm en 270°M vanaf de start, en terug', () => {
+  const st = [1, -2], decl = 2.5; const g = offsetNm(st, 0.5, 270 + decl); const d = distCrs(st, g, decl);
+  near(d.nm, 0.5); near(d.mw, 270); near(d.tw, 272.5);
+});
+test('offsetNm: 1 nm noord is y - 1', () => { const g = offsetNm([0, 0], 1, 0); near(g[0], 0); near(g[1], -1); });
