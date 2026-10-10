@@ -236,7 +236,7 @@ function offsetLegs(legs,c){
     l.s=ns;l.nm=+ns.reduce((a,x)=>a+x.nm,0).toFixed(2)});
 }
 function crsRange(st){return st.span<=4?pad3(st.mw):`${pad3(st.lo)}–${pad3(st.hi)}`}
-function subName(l,j){const w=l.wp&&l.wp[j+1];if(j===l.s.length-1)return '→ '+l.t;return w?'→ langs '+w:(j===0?'→ vaarwater in':'deel '+String.fromCharCode(97+j))}
+function subName(l,j){const w=l.wp&&l.wp[j+1];if(j===l.s.length-1)return '→ '+l.t;const sd=l.wps&&l.wps[j+1];return w?'→ langs '+w+(sd?' '+sd+' ⚠':''):(j===0?'→ vaarwater in':'deel '+String.fromCharCode(97+j))}
 function boatIcon(tw){const t=twaOf(tw);
   // sail on leeward side: wind from SB -> sail to port (left)
   const dir=t.side==='SB'?-1:1;const col=t.side==='SB'?'var(--green)':'var(--red)';
@@ -827,7 +827,7 @@ function buildGpx(){
         if(i===0)o={name:`${ST.baan}-GATE`,desc:'Gate (0,5 nm in de wind)',sym:'Flag, Blue'};
         else if(m&&m.l==='Finish')o={name:`${ST.baan}-FINISH`,desc:'Finish (schematisch)',sym:'Flag, Red'};
         else o={name:`${String(i+1).padStart(2,'0')}-${shortName(l.t)}`.slice(0,15),desc:`Rak ${i+1}: ${l.t}${m&&m.s?' – '+(m.s==='SB'?'aan stuurboord houden':'aan bakboord houden'):''}`,sym:m&&m.s==='SB'?'Navaid, Green':'Navaid, Red',kind:m&&m.s?'mark':'fix',side:m&&m.s,buoy:m&&m.b};}
-      else{const w=l.wp&&l.wp[j];o={name:`${String(i+1).padStart(2,'0')}${String.fromCharCode(97+j-1)}-${w?shortName(w):'VW'}`.slice(0,15),desc:w?`langs ${w} (vaarwater ${l.via.join(', ')})`:`vaarwater in (${l.via.join(', ')})`,kind:w?'turn':'fix',buoy:w}}
+      else{const w=l.wp&&l.wp[j];o={name:`${String(i+1).padStart(2,'0')}${String.fromCharCode(97+j-1)}-${w?shortName(w):'VW'}`.slice(0,15),desc:w?`langs ${w}${l.wps&&l.wps[j]?' aan '+(l.wps[j]==='SB'?'stuurboord':'bakboord')+' (checken bij palaver)':''} (vaarwater ${l.via.join(', ')})`:`vaarwater in (${l.via.join(', ')})`,kind:w?'turn':'fix',buoy:w}}
       if(sg)o.desc+=` | koers ${pad3(sg.mw)}m, ${sg.nm.toFixed(2)} nm, TWA ${Math.round(twaOf(sg.tw).a)}°`;
       add(l.p[j],o)}
   });
