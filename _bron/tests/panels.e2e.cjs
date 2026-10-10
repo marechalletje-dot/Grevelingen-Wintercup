@@ -55,7 +55,7 @@ const order = (p, sel) => p.evaluate(s => [...document.querySelector(s).children
     await p.click('[data-pid="ug2"] .pcolb'); ok((await p.locator('[data-pid="ug2"]').boundingBox()).height < 60, 'uitleg-vak dichtgeklapt');
     // herstellen
     await p.click('#tbUitleg'); await p.click('#layReset'); await p.waitForLoadState('load'); await p.waitForTimeout(800); await p.click('#tbKaart'); await p.waitForTimeout(300);
-    ok((await order(p, '.rail')) === 'boot,baan,gebied,startgate,info,legenda,export', 'indeling hersteld: ' + await order(p, '.rail'));
+    ok((await order(p, '.rail')) === 'boot,baan,gebied,startgate,info,stem,legenda,export', 'indeling hersteld: ' + await order(p, '.rail'));
     ok(errs.length === 0, 'geen JS-fouten ' + errs.join(';')); await ctx.close();
   }
   // ---------- telefoon ----------
@@ -63,7 +63,7 @@ const order = (p, sel) => p.evaluate(s => [...document.querySelector(s).children
     const ctx = await b.newContext({ ...devices['iPhone 13'] }); await ctx.route(/service\.pdok|fonts\./, r => r.abort());
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(URL); await p.waitForSelector('#lpBody tr');
-    ok((await order(p, '.rail')) === 'boot,baan,gebied,kaart,startgate,info,export,legenda', 'telefoon: standaardvolgorde ' + await order(p, '.rail'));
+    ok((await order(p, '.rail')) === 'boot,baan,gebied,kaart,startgate,info,stem,export,legenda', 'telefoon: standaardvolgorde ' + await order(p, '.rail'));
     ok(await p.evaluate(() => !document.getElementById('legendBox').open), 'telefoon: legenda standaard dicht');
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'telefoon: geen horizontale scroll');
     // sleep kaart naar boven (met auto-scroll)

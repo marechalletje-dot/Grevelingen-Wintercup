@@ -8,8 +8,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
     const ctx = await b.newContext({ ...opt, geolocation: { latitude: 51.7634, longitude: 3.876, accuracy: 5 }, permissions: ['geolocation'] });
     await ctx.route(/service\.pdok|fonts\./, r => r.abort());
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-    await p.addInitScript(() => { window.__said = []; if (window.speechSynthesis) speechSynthesis.speak = u => window.__said.push(u.text); });
+    await p.addInitScript(() => { window.__said = []; if (window.speechSynthesis) { speechSynthesis.speak = u => window.__said.push(u.text); const vs = [{ name: 'Ellen', lang: 'nl-BE' }, { name: 'Xander', lang: 'nl-NL' }, { name: 'Claire', lang: 'nl-NL' }, { name: 'Samantha', lang: 'en-US' }]; speechSynthesis.getVoices = () => vs; } });
     await p.goto(URL); await p.waitForSelector('#lpBody tr');
+    ok(await p.inputValue('#voiceSel') === 'Claire', `${nm}: Claire (nl-NL, vrouw) automatisch gekozen (${await p.inputValue('#voiceSel')})`);
+    ok((await p.$$eval('#voiceSel option', o => o.map(x => x.value))).join() === 'Claire,Xander,Ellen', `${nm}: volgorde stemmen`);
     // windpijl
     ok(await p.isVisible('#windInd'), `${nm}: windpijl zichtbaar op banenkaart`);
     ok(await p.getAttribute('#wiArrow', 'transform') === 'rotate(270)', `${nm}: pijl gedraaid naar 270`);
@@ -25,7 +27,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
     if (vis) { const h = await p.innerText('#nxH'), k = await p.innerText('#nxK'), t = await p.innerText('#nxT');
       ok(/volgend rak 2/i.test(h) && /\d{3}°/.test(k) && /TWA \d+° (SB|BB)/.test(t), `${nm}: inhoud "${h} | ${k} | ${t}"`); }
     const said = await p.evaluate(() => window.__said.filter(x => /rak/.test(x)));
-    ok(said.length >= 1 && /Over 2 minuten rak 2\. Koers \d \d \d\. T W A \d+, (stuurboord|bakboord)\./.test(said[0]), `${nm}: stem "${said[0]}"`);
+    ok(said.length >= 1 && /Over twee minuten: rak 2\. Koers [a-zé]+, [a-zé]+, [a-zé]+\. T\.W\.A\. \d+, (stuurboord|bakboord)\./.test(said[0]), `${nm}: stem "${said[0]}"`);
     await p.screenshot({ path: `/tmp/claude-0/-home-claude/09957d1d-b54b-5037-9ebe-4041ba2182de/scratchpad/nx_${nm}.png` });
     await p.click('#nxOk'); ok(!(await p.isVisible('#nxtPop')), `${nm}: OK sluit pop-up`);
     // alleen kaart

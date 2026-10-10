@@ -5,6 +5,7 @@ import { fmtT, fmtMS, hms, manTxt } from './core/timing.js';
 import { llXY, xyLL, brgT, pad3, wname, WIND_NAMES, twaOf as navTwaOf, pos, cmean, fitsWind, KX as KXl, offsetNm, distCrs, norm360 } from './core/nav.js';
 import { margins } from './core/rating.js';
 import { dueSignals, clockState } from './core/race.js';
+import { rankVoices, digits } from './core/voice.js';
 import { createStore } from './state.js';
 import { BOATS, FLEETS } from './data/boats.js';
 import { initPanels } from './ui/panels.js';
@@ -496,9 +497,14 @@ function sig5Show(){if(RACE.start){const d=new Date(RACE.start-300000);$('sig5In
 $('sig5In').addEventListener('change',e=>{const v=e.target.value;if(!v){RACE.start=null;saveRace();sig5Show();return}const [h,m,x]=v.split(':').map(Number);const d=new Date();d.setHours(h,m,x||0,0);setSig5(d.getTime())});
 $('sig5Now').onclick=()=>{unlockAudio();setSig5(Date.now())};
 sig5Show();
-let NLV=null;function pickVoice(){try{const vs=speechSynthesis.getVoices();NLV=vs.find(v=>/^nl[-_]NL/i.test(v.lang))||vs.find(v=>/^nl/i.test(v.lang))||null}catch(e){}}
-try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
-function say(txt,cut){if(!ST.voice)return;try{const ss=window.speechSynthesis;if(!ss)return;if(cut)ss.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang='nl-NL';if(NLV)u.voice=NLV;u.rate=cut?1.25:1.05;u.volume=1;ss.speak(u)}catch(e){}}
+// ---------- stem: beste Nederlandse (vrouwen)stem, door de gebruiker te kiezen ----------
+let NLV=null,NLVS=[];
+function pickVoice(){try{NLVS=rankVoices(speechSynthesis.getVoices());NLV=NLVS.find(v=>v.name===ST.voiceName)||NLVS[0]||null;fillVoices()}catch(e){}}
+function fillVoices(){const sel=$('voiceSel');if(!sel)return;
+  sel.innerHTML=NLVS.length?NLVS.map(v=>`<option value="${esc(v.name)}"${NLV&&v.name===NLV.name?' selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join(''):'<option value="">geen Nederlandse stem gevonden</option>';
+  $('voiceHint').textContent=NLVS.length?`${NLVS.length} Nederlandse stem${NLVS.length>1?'men':''} op dit apparaat.`:'Dit apparaat heeft geen Nederlandse stem. Zie Uitleg.'}
+try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,800);setTimeout(pickVoice,2500)}catch(e){}
+function say(txt,cut,force){if(!ST.voice&&!force)return;try{const ss=window.speechSynthesis;if(!ss)return;if(cut)ss.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang=NLV?NLV.lang:'nl-NL';if(NLV)try{u.voice=NLV}catch(_){};u.rate=cut?1.1:0.95;u.pitch=1;u.volume=1;ss.speak(u)}catch(e){}}
 function voiceShow(){const b=$('rbVoice');b.setAttribute('aria-pressed',ST.voice?'true':'false');b.textContent=ST.voice?'stem aan':'stem uit'}
 $('rbVoice').onclick=()=>{ST.voice=!ST.voice;voiceShow();unlockAudio();if(ST.voice)say('stem aan',true)};
 voiceShow();
@@ -555,10 +561,12 @@ function nextAlert(sec){if(!G.on||G.started===false||!CUR||G.cdTarget==null)retu
   if(!n){showNext('Nog 2 minuten','Finish','');say('Nog 2 minuten tot de finish');return}
   const st=legStats(n),t=twaOf(st.tw),k=Math.round(st.mw)%360,a=Math.round(t.a);const side=t.side==='SB'?'stuurboord':'bakboord';
   showNext(`Volgend rak ${i+2} → ${esc(n.t)}`,pad3(k)+'<small style="font-size:.45em">M</small>',`TWA ${a}° <span class="${t.side.toLowerCase()}">${t.side}</span><small>${pos(a)}</small>`);
-  say(`Over 2 minuten rak ${i+2}. Koers ${String(k).padStart(3,'0').split('').join(' ')}. T W A ${a}, ${side}.`)}
+  say(`Over twee minuten: rak ${i+2}. Koers ${digits(k)}. T.W.A. ${a}, ${side}.`)}
 function showNext(h,k,t){$('nxH').innerHTML=h;$('nxK').innerHTML=k;$('nxT').innerHTML=t;$('nxtPop').hidden=false;
   try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(_){}clearTimeout(G.nxTimer);G.nxTimer=setTimeout(()=>{$('nxtPop').hidden=true},G.demo?8000:30000)}
 $('nxOk').onclick=()=>{$('nxtPop').hidden=true};
+$('voiceSel').onchange=e=>{ST.voiceName=e.target.value;pickVoice()};
+$('voiceTest').onclick=()=>{unlockAudio();say(`Over twee minuten: rak 3. Koers ${digits(88)}. T.W.A. 180, bakboord.`,true,true)};
 // ---------- alleen kaart (racemodus) ----------
 function mapOnly(on){document.body.classList.toggle('maponly',on);$('mapOnly').setAttribute('aria-pressed',on?'true':'false');$('mapOnly').textContent=on?'vensters':'alleen kaart';setTimeout(()=>{try{applyVB()}catch(e){}},30)}
 $('mapOnly').onclick=()=>mapOnly(!document.body.classList.contains('maponly'));
