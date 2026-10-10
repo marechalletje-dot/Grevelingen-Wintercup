@@ -14,7 +14,12 @@ test('kettingstart: volgende waarschuwing = vorige start', () => {
 });
 test('ongeldige positie valt terug op 1', () => { assert.equal(slotTimes(0).warn, slotTimes(1).warn); assert.equal(slotTimes('x').warn, slotTimes(1).warn); });
 test('warnMs geeft de tijd op de gekozen dag', () => {
-  const d = new Date(warnMs(3, new Date(2026, 9, 11, 8, 0)));
+  const d = new Date(warnMs(3, new Date(2026, 9, 11, 8, 0), undefined, new Date(2026, 9, 11, 8, 0).getTime()));
   assert.equal(d.getHours(), 11); assert.equal(d.getMinutes(), 5); assert.equal(d.getDate(), 11);
 });
 test('9 startgroepen met unieke vlag', () => { assert.equal(new Set(GROUPS.map(g => g.flag)).size, 9); });
+test('warnMs: avond ervoor = start van morgen', () => {
+  const eve = new Date(2026, 9, 10, 23, 30);
+  const d = new Date(warnMs(1, eve, undefined, eve.getTime()));
+  assert.equal(d.getDate(), 11); assert.equal(d.getHours(), 10); assert.equal(d.getMinutes(), 55);
+});

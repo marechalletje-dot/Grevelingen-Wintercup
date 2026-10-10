@@ -30,7 +30,10 @@ export function chain(n, firstWarn = FIRST_WARN, gap = 5) {
 }
 
 /** Unix-ms van het waarschuwingssein (= 5-minutensein) op de gegeven dag. */
-export function warnMs(pos, day = new Date(), firstWarn = FIRST_WARN) {
+export function warnMs(pos, day = new Date(), firstWarn = FIRST_WARN, now = Date.now()) {
   const t = slotTimes(pos, firstWarn); const d = new Date(day);
-  d.setHours(Math.floor(t.warn / 60), t.warn % 60, 0, 0); return d.getTime();
+  d.setHours(Math.floor(t.warn / 60), t.warn % 60, 0, 0);
+  // al voorbij (meer dan een uur geleden)? dan is de start van de volgende dag bedoeld
+  if (now != null && d.getTime() < now - 3600e3) d.setDate(d.getDate() + 1);
+  return d.getTime();
 }

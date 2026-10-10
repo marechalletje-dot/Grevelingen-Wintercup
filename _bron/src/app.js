@@ -14,6 +14,8 @@ import { initPanels } from './ui/panels.js';
 import { initRegels } from './ui/regels.js';
 
 const D=window.__D;
+// Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
+for(const c of Object.values(D.courses)){if(!c.orig)continue;if(Date.now()>Date.parse(c.until)){Object.assign(c,c.orig);delete c.mod}delete c.orig}
 const IMG=window.__IMG;
 let LS=null;try{LS=window.localStorage}catch(e){}
 export const store=createStore(LS);
@@ -351,7 +353,7 @@ function show(fit){
   curBox={x:minx,y:miny,w:maxx-minx,h:maxy-miny};
   const total=legs.reduce((s,l)=>s+l.nm,0);
   const flags=legs.filter(l=>l.flag).length;
-  $('info').innerHTML=`<div class="big">Baan ${ST.baan}</div><div>${esc(c.title)}</div>
+  $('info').innerHTML=`<div class="big">Baan ${ST.baan}</div><div>${esc(c.title)}</div>${c.mod?`<div class="modnote">⚠ ${esc(c.mod)}</div>`:''}
    <div class="kv"><span>Boekje</span><span>${esc(c.dist)}</span></div>
    <div class="kv"><span>Langs de lijn</span><span>${total.toFixed(1)} nm</span></div>
    <div class="kv"><span>Zeiltijd (polar)</span><span><b>${fmtT(legs.reduce((a,l)=>a+legTime(l),0))}</b></span></div>
@@ -539,7 +541,7 @@ function rbSync(){$('rbTwdR').value=Math.round(ST.twd/5)*5%360;$('rbTwd').textCo
 $('rbEffR').addEventListener('input',e=>{$('rbEff').textContent=e.target.value+'%'});
 $('rbEffR').addEventListener('change',e=>{$('effIn').value=e.target.value;setTws();rbSync()});
 $('rbSigNow').onclick=()=>{unlockAudio();setSig5(Date.now());rbSync();raceTick()};
-$('rbSig5').addEventListener('change',e=>{unlockAudio();const v=e.target.value;if(!v)return;const [h,m,x]=v.split(':').map(Number);const d=new Date();d.setHours(h,m,x||0,0);setSig5(d.getTime());rbSync();raceTick()});
+$('rbSig5').addEventListener('change',e=>{unlockAudio();const v=e.target.value;if(!v)return;const [h,m,x]=v.split(':').map(Number);const d=new Date();d.setHours(h,m,x||0,0);if(d.getTime()<Date.now()-3600e3)d.setDate(d.getDate()+1);setSig5(d.getTime());rbSync();raceTick()});
 $('rbSigClr').onclick=()=>{RACE.start=null;RACE.fin=null;saveRace();sig5Show();showResult();rbSync();raceTick()};
 $('rbFin').onclick=()=>$('finBtn').onclick();
 let LEGFILL=false;$('legBtn').onclick=()=>{const lp=$('legPop');if(!LEGFILL){$('legPopBody').innerHTML=document.querySelector('#legendBox .legend').innerHTML.replace(/ id="[^"]*"/g,'');LEGFILL=true}lp.hidden=!lp.hidden;$('legBtn').setAttribute('aria-pressed',lp.hidden?'false':'true')};
