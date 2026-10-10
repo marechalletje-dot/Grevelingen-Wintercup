@@ -7,6 +7,7 @@ import { margins } from './core/rating.js';
 import { dueSignals, clockState } from './core/race.js';
 import { createStore } from './state.js';
 import { BOATS, FLEETS } from './data/boats.js';
+import { initPanels } from './ui/panels.js';
 
 const D=window.__D;
 const IMG=window.__IMG;
@@ -130,7 +131,7 @@ let curBox=ALL,startBox=ALL;$('fit').onclick=()=>fitTo(curBox);$('fitS').onclick
 const FB={x:Math.min(D.finish.ship[0],D.finish.buoy[0])-0.25,y:Math.min(D.finish.ship[1],D.finish.buoy[1])-0.2,w:0.5,h:0.4};$('fitF').onclick=()=>fitTo(FB,0.1);
 $('tDepth').onchange=e=>{$('depth').style.display=e.target.checked?'':'none'};
 $('tBuoy').onchange=e=>{$('buoys').style.display=e.target.checked?'':'none'};
-try{if(window.innerWidth<760)$('legendBox').open=false}catch(e){}
+
 $('tCorr').onchange=e=>{$('corr').style.display=e.target.checked?'':'none'};
 $('tCrs').onchange=e=>{document.querySelectorAll('.crs').forEach(t=>t.style.display=e.target.checked?'':'none')};
 
@@ -496,7 +497,7 @@ function showResult(){if(!RACE.fin){$('raceRes').hidden=true;return}const el=(RA
   $('raceRes').hidden=false;$('resGo').onclick=()=>setTab('Deeln');$('resUndo').onclick=()=>{RACE.fin=null;saveRace();$('dlOver').value='';showResult();renderFleet()}}
 $('finBtn').onclick=()=>{if(!RACE.start)return;RACE.fin=Date.now();saveRace();$('dlOver').value=((RACE.fin-RACE.start)/60000).toFixed(2);beep(1,660,.8);showResult();try{renderFleet()}catch(e){}};
 setInterval(raceTick,250);
-function raceMode(on){document.body.classList.toggle('race',on);try{applyVB()}catch(e){}}
+function raceMode(on){document.body.classList.toggle('race',on);try{PANELS&&PANELS.apply()}catch(e){}try{applyVB()}catch(e){}}
 $('raceBtn').onclick=()=>{setTab('Race');setTimeout(()=>{$('chart').scrollIntoView({block:'start'})},50)};
 function rbSync(){$('rbTwdR').value=Math.round(ST.twd/5)*5%360;$('rbTwd').textContent=pad3(ST.twd);$('rbTwsR').value=ST.tws;$('rbTws').textContent=ST.tws+' kn';$('rbEffR').value=ST.eff;$('rbEff').textContent=ST.eff+'%';$('rbSig5').value=RACE.start?new Date(RACE.start-300000).toTimeString().slice(0,8):''}
 $('rbEffR').addEventListener('input',e=>{$('rbEff').textContent=e.target.value+'%'});
@@ -865,5 +866,7 @@ $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlM
 
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
+var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
+$('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
 {const t0=ST.tab;ST.tab='Kaart';if(t0!=='Kaart')setTab(t0)}
 new ResizeObserver(()=>applyVB()).observe(svg);

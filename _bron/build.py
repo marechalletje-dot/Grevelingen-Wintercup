@@ -34,7 +34,7 @@ data = put('data', 'json', data_raw.encode())
 app = put('app', 'js', ('window.__IMG=' + json.dumps(dict(img, href=aer)) + ';\n' + bundle).encode())
 shutil.copy(R + 'assets/jspdf.umd.min.js', out + 'jspdf.umd.min.js')
 for f in ['manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']: shutil.copy(R + 'assets/' + f, out + f)
-PWA = ('<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="apple-touch-icon.png">\n'
+PWA = ('<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="apple-touch-icon.png?v=' + H(open(R + 'assets/apple-touch-icon.png', 'rb').read()) + '">\n'
  '<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n'
  '<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Wintercup">\n'
  '<meta name="apple-mobile-web-app-status-bar-style" content="default">\n<meta name="theme-color" content="#2f4060">\n'

@@ -28,6 +28,7 @@ export const SCHEMA = {
   fleet_xp:{ def: null, key: 'wc_fleet_xp', json: true, fix: v => (Array.isArray(v) && v.length ? v : null) },
   myf_dm:  { def: null, key: 'wc_myf', fix: v => (+v > 0.7 && +v < 1.3 ? +v : null) },
   myf_xp:  { def: null, key: 'wc_myf_xp', fix: v => (+v > 0.7 && +v < 1.3 ? +v : null) },
+  layout:  { def: {}, key: 'wc_layout', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);
 

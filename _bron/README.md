@@ -12,10 +12,11 @@ De bestanden in de hoofdmap van de repo zijn het bouwresultaat.
   - `rating.js` – gecorrigeerde tijd, gelijke stand, marges
   - `race.js` – startsignalen, gesproken countdown, klokweergave
 - `src/data/boats.js` – polars, boten en vloten (alleen data).
+- `src/ui/panels.js` – vakken open/dicht, groter/kleiner, schermvullend en verplaatsen (slepen); indeling per schermtype bewaard in de store.
 - `src/app.js` – scherm en interactie; gebruikt core + state.
 - `src/page.html` – HTML en CSS; `src/sw_tpl.js` – service worker.
 - `assets/` – kaartdata, luchtfoto, PDF-module, iconen.
-- `tests/` – unit tests (`*.test.js`, Node) en een end-to-end test (`e2e.cjs`, Playwright).
+- `tests/` – unit tests (`*.test.js`, Node) en end-to-end tests (`e2e.cjs`, `panels.e2e.cjs`, Playwright).
 
 ## Bouwen
     npm i -g esbuild
