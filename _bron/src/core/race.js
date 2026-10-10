@@ -16,7 +16,7 @@ export function dueSignals(left, fired, voice) {
     const k = 's' + t; if (left <= t && left > t - 2 && !fired.has(k)) { fired.add(k); beeps.push({ n, f, d }); }
   }
   if (voice) for (const [t, txt] of VCALLS) {
-    const k = 'v' + t; if (left <= t && left > t - 1.5 && !fired.has(k)) { fired.add(k); calls.push({ txt, quick: t <= 20 }); }
+    const k = 'v' + t; if (left <= t && left > t - 1.5 && !fired.has(k)) { fired.add(k); calls.push({ txt, quick: t <= 20, t }); }
   }
   return { beeps, calls };
 }

@@ -6,9 +6,12 @@ import { llXY, xyLL, brgT, pad3, wname, WIND_NAMES, twaOf as navTwaOf, pos, cmea
 import { margins } from './core/rating.js';
 import { dueSignals, clockState } from './core/race.js';
 import { rankVoices, digits } from './core/voice.js';
+import { countdownKeys, nextLegKeys, spiKeys } from './core/clips.js';
+import { initClips } from './ui/clips.js';
 import { createStore } from './state.js';
-import { BOATS, FLEETS } from './data/boats.js';
+import { BOATS, FLEETS, CLASSES, FLEET_SRC } from './data/boats.js';
 import { initPanels } from './ui/panels.js';
+import { initRegels } from './ui/regels.js';
 
 const D=window.__D;
 const IMG=window.__IMG;
@@ -479,7 +482,7 @@ function spiAlert(){if(!G.on||G.cdTarget==null||!CUR_SPI||!CUR_SPI.ev||!G.pr||G.
     (G.spiDone||(G.spiDone=new Set())).add(key);
     $('spK').textContent=e.kind==='HIJSEN'?'Hijsen':'Strijken';
     $('spSide').textContent=e.side==='BB'?'Bakboord':'Stuurboord';$('spSide').className='sp-side '+e.side.toLowerCase();
-    $('spiPop').hidden=false;
+    $('spiPop').hidden=false;speak(spiKeys(e.kind,e.side),`Spinnaker ${e.kind==='HIJSEN'?'hijsen':'strijken'}, ${e.side==='BB'?'bakboord':'stuurboord'}`);
     try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(_){}
     try{const ac=G.ac||(G.ac=new (window.AudioContext||window.webkitAudioContext)());[0,0.35].forEach(d=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;g.gain.value=0.25;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+d);o.stop(ac.currentTime+d+0.25)})}catch(_){}
     clearTimeout(G.spiTimer);G.spiTimer=setTimeout(()=>{$('spiPop').hidden=true},G.demo?6000:60000);break}}
@@ -505,8 +508,13 @@ function fillVoices(){const sel=$('voiceSel');if(!sel)return;
   $('voiceHint').textContent=NLVS.length?`${NLVS.length} Nederlandse stem${NLVS.length>1?'men':''} op dit apparaat.`:'Dit apparaat heeft geen Nederlandse stem. Zie Uitleg.'}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,800);setTimeout(pickVoice,2500)}catch(e){}
 function say(txt,cut,force){if(!ST.voice&&!force)return;try{const ss=window.speechSynthesis;if(!ss)return;if(cut)ss.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang=NLV?NLV.lang:'nl-NL';if(NLV)try{u.voice=NLV}catch(_){};u.rate=cut?1.1:0.95;u.pitch=1;u.volume=1;ss.speak(u)}catch(e){}}
+// ingesproken fragmenten gaan voor; ontbreekt er iets, dan spreekt de telefoonstem
+const CLIPSX=initClips({getCtx:()=>{unlockAudio();return G.ac},onChange:()=>{try{clipShow()}catch(e){}}});
+window.__clips=CLIPSX;
+function speak(keys,txt,cut,force){if(!ST.voice&&!force)return;if(keys&&CLIPSX.play(keys,cut))return;say(txt,cut,force)}
+function clipShow(){const n=CLIPSX.count(),t=CLIPSX.total;$('recInfo').textContent=n?`Eigen opnames: ${n} van ${t} ingesproken${n<t?' (meldingen waarvan een stukje ontbreekt, gebruiken de telefoonstem)':' — alle meldingen gebruiken je eigen stem'}.`:'Nog geen eigen opnames: de telefoonstem spreekt.'}
 function voiceShow(){const b=$('rbVoice');b.setAttribute('aria-pressed',ST.voice?'true':'false');b.textContent=ST.voice?'stem aan':'stem uit'}
-$('rbVoice').onclick=()=>{ST.voice=!ST.voice;voiceShow();unlockAudio();if(ST.voice)say('stem aan',true)};
+$('rbVoice').onclick=()=>{ST.voice=!ST.voice;voiceShow();unlockAudio();if(ST.voice)speak(['stemaan'],'stem aan',true)};
 voiceShow();
 let WL=null;async function wakeLock(on){try{if(on){if(!WL&&navigator.wakeLock){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ST.tab==='Race')wakeLock(true)});
@@ -514,7 +522,7 @@ function unlockAudio(){try{if(window.speechSynthesis&&!G.spk){G.spk=1;const u=ne
 function beep(n,freq=880,dur=0.22,gap=0.32){try{const ac=G.ac||(G.ac=new (window.AudioContext||window.webkitAudioContext)());for(let i=0;i<n;i++){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;g.gain.value=0.3;o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+i*gap);o.stop(ac.currentTime+i*gap+dur)}}catch(_){}try{navigator.vibrate&&navigator.vibrate(n>1?[250,120,250]:400)}catch(_){}}
 function raceTick(){const now=Date.now();const pre=RACE.start&&now<RACE.start;
   if(RACE.start&&!RACE.fin){const left=(RACE.start-now)/1000;
-    const due=dueSignals(left,RACE.fired,ST.voice);due.beeps.forEach(b=>beep(b.n,b.f,b.d,.35));due.calls.forEach(c=>say(c.txt,c.quick));
+    const due=dueSignals(left,RACE.fired,ST.voice);due.beeps.forEach(b=>beep(b.n,b.f,b.d,.35));due.calls.forEach(c=>speak(countdownKeys(c.t),c.txt,c.quick));
     if(left<=0&&G.started===false){G.started=true}}
   $('raceRow').hidden=!(G.on&&RACE.start&&now>=RACE.start);
   if(!$('raceRow').hidden){$('raceClock').textContent=hms((RACE.fin||now)-RACE.start);$('finBtn').hidden=!!RACE.fin;$('raceLab').textContent=RACE.fin?'Gezeild':'Race'}
@@ -558,15 +566,16 @@ setInterval(cdTick,500);
 const NEXT_LEAD=120;
 function nextAlert(sec){if(!G.on||G.started===false||!CUR||G.cdTarget==null)return;const i=NAV.leg;if(sec>NEXT_LEAD||G.nxDone===i)return;
   G.nxDone=i;const n=CUR.legs[i+1];
-  if(!n){showNext('Nog 2 minuten','Finish','');say('Nog 2 minuten tot de finish');return}
+  if(!n){showNext('Nog 2 minuten','Finish','');speak(['fin2'],'Nog 2 minuten tot de finish');return}
   const st=legStats(n),t=twaOf(st.tw),k=Math.round(st.mw)%360,a=Math.round(t.a);const side=t.side==='SB'?'stuurboord':'bakboord';
   showNext(`Volgend rak ${i+2} → ${esc(n.t)}`,pad3(k)+'<small style="font-size:.45em">M</small>',`TWA ${a}° <span class="${t.side.toLowerCase()}">${t.side}</span><small>${pos(a)}</small>`);
-  say(`Over twee minuten: rak ${i+2}. Koers ${digits(k)}. T.W.A. ${a}, ${side}.`)}
+  speak(nextLegKeys(i+2,k,a,t.side),`Over twee minuten: rak ${i+2}. Koers ${digits(k)}. T.W.A. ${a}, ${side}.`)}
 function showNext(h,k,t){$('nxH').innerHTML=h;$('nxK').innerHTML=k;$('nxT').innerHTML=t;$('nxtPop').hidden=false;
   try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(_){}clearTimeout(G.nxTimer);G.nxTimer=setTimeout(()=>{$('nxtPop').hidden=true},G.demo?8000:30000)}
 $('nxOk').onclick=()=>{$('nxtPop').hidden=true};
 $('voiceSel').onchange=e=>{ST.voiceName=e.target.value;pickVoice()};
-$('voiceTest').onclick=()=>{unlockAudio();say(`Over twee minuten: rak 3. Koers ${digits(88)}. T.W.A. 180, bakboord.`,true,true)};
+$('voiceTest').onclick=()=>{unlockAudio();speak(nextLegKeys(3,88,180,'BB'),`Over twee minuten: rak 3. Koers ${digits(88)}. T.W.A. 180, bakboord.`,true,true)};
+$('recOpen').onclick=()=>{unlockAudio();CLIPSX.open()};
 // ---------- alleen kaart (racemodus) ----------
 function mapOnly(on){document.body.classList.toggle('maponly',on);$('mapOnly').setAttribute('aria-pressed',on?'true':'false');$('mapOnly').textContent=on?'vensters':'alleen kaart';setTimeout(()=>{try{applyVB()}catch(e){}},30)}
 $('mapOnly').onclick=()=>mapOnly(!document.body.classList.contains('maponly'));
@@ -847,7 +856,7 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
@@ -858,39 +867,48 @@ function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Uitleg'].for
   wakeLock(t==='Race')}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 // ---------- deelnemers & marges ----------
-const F0=x=>{const o=FLEET0.find(y=>y.boat===x.boat&&y.sail===x.sail);return o?o.f:null};let DM0=BOATS[ST.boat].myf;
-let FLEET0=FLEETS[ST.boat];
+const CLS=()=>ST.dlCls&&FLEETS[ST.dlCls]?ST.dlCls:BOATS[ST.boat].cls;
+const myKey=()=>ST.boat+'|'+CLS();
+const myDefault=()=>{const B=BOATS[ST.boat];return B.myfBy[CLS()]??B.myfBy[B.cls]};
+const mySrc=()=>{const B=BOATS[ST.boat];return (B.srcBy&&B.srcBy[CLS()])||B.src};
+const F0x=x=>FLEET0.find(y=>y.boat===x.boat&&y.gc===x.gc);
+const F0=x=>{const o=F0x(x);return o?o.f:null};let DM0=myDefault();
+let FLEET0=FLEETS[CLS()];
 let FLEET=[];
-function loadFleet(){const B=BOATS[ST.boat];FLEET0=FLEETS[ST.boat];DM0=B.myf;FLEET=FLEET0.map(x=>Object.assign({on:true},x));
-  {const v=ST['fleet_'+ST.boat];if(Array.isArray(v)&&v.length)FLEET=JSON.parse(JSON.stringify(v))}
-  $('dlMy').value=DM0;{const m=ST['myf_'+ST.boat];if(m)$('dlMy').value=m}
-  $('dlEstLab').textContent='Geschatte zeiltijd '+B.name;$('dlMyLab').textContent=B.rlab+' '+B.name;$('dlNote').textContent=B.note;try{$('dlNoteU').textContent=B.note}catch(e){}
+function loadFleet(){const B=BOATS[ST.boat];FLEET0=FLEETS[CLS()];DM0=myDefault();FLEET=FLEET0.map(x=>Object.assign({on:true},x));
+  {const v=(ST.fleets2||{})[CLS()];if(Array.isArray(v)&&v.length)FLEET=JSON.parse(JSON.stringify(v))}
+  $('dlMy').value=DM0;{const m=(ST.myf2||{})[myKey()];if(m>0.6&&m<1.4)$('dlMy').value=m}
+  $('dlCls').innerHTML=Object.entries(CLASSES).map(([k,l])=>`<option value="${k}"${k===CLS()?' selected':''}>${l} · ${FLEETS[k].length} boten${k===B.cls?' (jouw klasse)':''}</option>`).join('');
+  $('dlEstLab').textContent='Geschatte zeiltijd '+B.name;$('dlMyLab').textContent=B.rlab+' '+B.name;$('dlNote').textContent=B.note;try{$('dlNoteU').textContent=B.note+' '+FLEET_SRC}catch(e){}
   document.querySelectorAll('.bname').forEach(e=>e.textContent=B.name);$('polSrc').textContent=B.polarSrc;
   $('boatSel').value=ST.boat;$('boatHint').textContent=B.klasse}
-function saveFleet(){store.set({['fleet_'+ST.boat]:FLEET,['myf_'+ST.boat]:+$('dlMy').value})}
+function saveFleet(){store.set({fleets2:Object.assign({},ST.fleets2,{[CLS()]:FLEET}),myf2:Object.assign({},ST.myf2,{[myKey()]:+$('dlMy').value})})}
 loadFleet();
-$('boatSel').onchange=e=>{ST.boat=e.target.value;loadFleet();show(false);renderFleet()};
+$('boatSel').onchange=e=>{ST.boat=e.target.value;ST.dlCls='';loadFleet();show(false);renderFleet()};
+$('dlCls').onchange=e=>{ST.dlCls=e.target.value===BOATS[ST.boat].cls?'':e.target.value;loadFleet();renderFleet()};
+const zeil=x=>`${esc(x.gc||'')}${x.zn?`<small class="zn">${esc(x.zn)}</small>`:''}`;
+const bron=x=>x.est?`<span class="est" title="Schatting [Inference]">${esc(x.src||'')}</span>`:esc(x.src||'');
 function estHours(){if(!CUR)return null;return CUR.legs.reduce((a,l)=>a+legTime(l),0)}
 function fEd(cls,i,val,orig,name){const chg=orig!=null&&Math.abs(val-orig)>1e-9;
   return `<span class="fed"><button type="button" class="fst" data-c="${cls}" data-i="${i}" data-d="-0.001" aria-label="rating ${esc(name)} omlaag">−</button><input type="number" step="0.0001" min="0.7" max="1.3" data-i="${i}" class="${cls}${chg?' chg':''}" value="${(+val).toFixed(4)}" aria-label="GC-factor ${esc(name)}"><button type="button" class="fst" data-c="${cls}" data-i="${i}" data-d="0.001" aria-label="rating ${esc(name)} omhoog">+</button>${chg?`<button type="button" class="frs" data-c="${cls}" data-i="${i}" title="Terug naar ${orig.toFixed(4)}">↺</button>`:''}</span>${chg?`<span class="was">was ${orig.toFixed(4)}</span>`:''}`}
 const o0Null=x=>F0(x)==null;
-function setF(cls,i,v){v=Math.round(v*10000)/10000;if(!(v>0.7&&v<1.3))return;if(cls==='dlMyT'){$('dlMy').value=v.toFixed(4)}else{const x=FLEET[i];x.f=v;if(x.on===false&&o0Null(x))x.on=true;const o=F0(x);x.src=o==null?(x.src||'handmatig'):(Math.abs(v-o)<1e-9?'uitslag [verified]':'aangepast')}saveFleet();renderFleet()}
+function setF(cls,i,v){v=Math.round(v*10000)/10000;if(!(v>0.7&&v<1.3))return;if(cls==='dlMyT'){$('dlMy').value=v.toFixed(4)}else{const x=FLEET[i];x.f=v;if(x.on===false&&o0Null(x))x.on=true;const o0=F0x(x),o=o0?o0.f:null;x.src=o==null?(x.src&&x.src!=='geen rating gevonden'?x.src:'handmatig'):(Math.abs(v-o)<1e-9?o0.src:'aangepast');x.est=o!=null&&Math.abs(v-o)<1e-9?!!o0.est:false}saveFleet();renderFleet()}
 function renderFleet(){
   if($('tabDeeln').hidden)return;
   const est=estHours();const over=+$('dlOver').value;const Tmin=over>0?over:(est?est*60:120);
   const myf=+$('dlMy').value||DM0;const ME=BOATS[ST.boat];const nm=CUR?CUR.total:0;const kn=est?nm/est:6;
   $('dlCourse').textContent=CUR?`baan ${ST.baan} · ${ST.twd}° · ${ST.tws} kn`:'–';
   $('dlEst').textContent=est?`${fmtT(est)} (${nm.toFixed(1)} nm, ${kn.toFixed(1)} kn)`:'–';
-  const rows=[...FLEET,{sail:ME.sail,boat:ME.name,type:ME.type,f:myf,src:ME.src,on:true,me:true}].filter(x=>!(x.sail===ME.sail&&!x.me));
+  const rows=[...FLEET,{gc:ME.gc,zn:ME.sail,boat:ME.name,type:ME.type,f:myf,src:mySrc(),on:true,me:true}].filter(x=>!(x.gc===ME.gc&&!x.me));
   rows.sort((a,b)=>(b.f||0)-(a.f||0));
   const MG=margins(rows.filter(x=>!x.me),Tmin,myf,kn);const MGx=new Map(MG.rows.map(r=>[r.x,r]));const worstAhead=MG.ahead,worstBehind=MG.behind;
   $('dlBody').innerHTML=rows.map(x=>{
-    if(x.me)return `<tr class="me"><td></td><td>${esc(x.sail)}</td><td>${esc(x.boat)}</td><td>${esc(x.type)}</td><td class="r fcell">${fEd('dlMyT',-1,myf,DM0,ME.name)}</td><td>${Math.abs(myf-DM0)>1e-9?'aangepast':esc(x.src)}</td><td class="r">${fmtMS(Tmin)}</td><td>jouw zeiltijd</td><td></td></tr>`;
-    if(!x.f){const i=FLEET.indexOf(x);return `<tr class="off"><td><input type="checkbox" disabled aria-label="geen rating"></td><td>${esc(x.sail)}</td><td>${esc(x.boat)}</td><td>${esc(x.type)}</td><td class="r fcell"><span class="fed"><input type="number" step="0.0001" min="0.7" max="1.3" data-i="${i}" class="dlF" placeholder="factor" aria-label="factor ${esc(x.boat)}"></span></td><td>${esc(x.src||'')}</td><td class="r">–</td><td><small>vul een factor in</small></td><td></td></tr>`}
+    if(x.me)return `<tr class="me"><td></td><td>${zeil(x)}</td><td>${esc(x.boat)}</td><td>${esc(x.type)}</td><td class="r fcell">${fEd('dlMyT',-1,myf,DM0,ME.name)}</td><td>${Math.abs(myf-DM0)>1e-9?'aangepast':bron(x)}</td><td class="r">${fmtMS(Tmin)}</td><td>jouw zeiltijd</td><td></td></tr>`;
+    if(!x.f){const i=FLEET.indexOf(x);return `<tr class="off"><td><input type="checkbox" disabled aria-label="geen rating"></td><td>${zeil(x)}</td><td>${esc(x.boat)}</td><td>${esc(x.type)}</td><td class="r fcell"><span class="fed"><input type="number" step="0.0001" min="0.7" max="1.3" data-i="${i}" class="dlF" placeholder="factor" aria-label="factor ${esc(x.boat)}"></span></td><td>${esc(x.src||'')}</td><td class="r">–</td><td><small>vul een factor in</small></td><td></td></tr>`}
     const {tie,lag,m}=MGx.get(x);
     const i=FLEET.indexOf(x);
-    return `<tr class="${x.on?'':'off'}"><td><input type="checkbox" data-i="${i}" class="dlOn" ${x.on?'checked':''} aria-label="${esc(x.boat)} meetellen"></td><td>${esc(x.sail)}</td><td>${esc(x.boat)}</td><td>${esc(x.type)}</td>
-      <td class="r fcell">${fEd('dlF',i,x.f,F0(x),x.boat)}</td><td>${esc(x.src||'')}</td>
+    return `<tr class="${x.on?'':'off'}"><td><input type="checkbox" data-i="${i}" class="dlOn" ${x.on?'checked':''} aria-label="${esc(x.boat)} meetellen"></td><td>${zeil(x)}</td><td>${esc(x.boat)}</td><td>${esc(x.type)}</td>
+      <td class="r fcell">${fEd('dlF',i,x.f,F0(x),x.boat)}</td><td>${bron(x)}</td>
       <td class="r">${fmtMS(tie)}</td>
       <td><span class="mg ${lag>=0?'ok':'bad'}">${lag>=0?'+':'−'}${fmtMS(lag)} <small>${lag>=0?`${esc(x.boat)} moet ≥ ${fmtMS(lag)} eerder finishen (jij mag zoveel achter liggen)`:`jij moet ≥ ${fmtMS(lag)} eerder finishen dan ${esc(x.boat)}`}</small></span></td>
       <td class="r">${Math.round(m)} m</td></tr>`}).join('');
@@ -905,11 +923,12 @@ function renderFleet(){
   $('dlBody').querySelectorAll('.frs').forEach(b=>b.onclick=()=>{const c=b.dataset.c,i=+b.dataset.i;setF(c,i,c==='dlMyT'?DM0:F0(FLEET[i]))});
 }
 ['dlOver','dlMy'].forEach(id=>$(id).addEventListener('change',()=>{saveFleet();renderFleet()}));
-$('dlAdd').onclick=()=>{const n=$('dlNewName').value.trim(),f=+$('dlNewF').value;if(!n||!(f>0.7&&f<1.3)){$('dlNewF').focus();return}FLEET.push({sail:'',boat:n,type:$('dlNewType').value.trim(),f,src:'handmatig',on:true});$('dlNewName').value=$('dlNewType').value=$('dlNewF').value='';saveFleet();renderFleet()};
+$('dlAdd').onclick=()=>{const n=$('dlNewName').value.trim(),f=+$('dlNewF').value;if(!n||!(f>0.7&&f<1.3)){$('dlNewF').focus();return}FLEET.push({gc:'',zn:'',boat:n,type:$('dlNewType').value.trim(),f,src:'handmatig',on:true});$('dlNewName').value=$('dlNewType').value=$('dlNewF').value='';saveFleet();renderFleet()};
 $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlMy').value=DM0;saveFleet();renderFleet()};
 
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
+initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
 {const t0=ST.tab;ST.tab='Kaart';if(t0!=='Kaart')setTab(t0)}
