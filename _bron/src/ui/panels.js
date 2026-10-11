@@ -20,6 +20,8 @@ export const PANELS = [
   { id: 'dlsum',   sel: '#dlSum',            title: 'Samenvatting' },
   { id: 'dltabel', sel: '#tabDeeln > .tbl',  title: 'Deelnemers' },
   { id: 'dladd',   sel: '#tabDeeln > .dl-add', title: 'Boot toevoegen' },
+  { id: 'u1',      sel: '#u1', title: 'Tussenstand' },
+  { id: 'u2',      sel: '#u2', title: 'Daguitslag' },
   { id: 'wb1',     sel: '#wb1', title: 'Startvolgorde & mijn start' },
   { id: 'wb2',     sel: '#wb2', title: 'Startprocedure' },
   { id: 'wb3',     sel: '#wb3', title: 'Startlijn, startgebied & finish' },

@@ -12,6 +12,7 @@ import { createStore } from './state.js';
 import { BOATS, FLEETS, CLASSES, FLEET_SRC } from './data/boats.js';
 import { initPanels } from './ui/panels.js';
 import { initRegels } from './ui/regels.js';
+import { initUitslagen } from './ui/uitslagen.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -858,7 +859,7 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
@@ -926,11 +927,11 @@ function renderFleet(){
 }
 ['dlOver','dlMy'].forEach(id=>$(id).addEventListener('change',()=>{saveFleet();renderFleet()}));
 $('dlAdd').onclick=()=>{const n=$('dlNewName').value.trim(),f=+$('dlNewF').value;if(!n||!(f>0.7&&f<1.3)){$('dlNewF').focus();return}FLEET.push({gc:'',zn:'',boat:n,type:$('dlNewType').value.trim(),f,src:'handmatig',on:true});$('dlNewName').value=$('dlNewType').value=$('dlNewF').value='';saveFleet();renderFleet()};
-$('dlGrp1').onclick=()=>{if(CLS()!=='TS'){ST.dlCls=BOATS[ST.boat].cls==='TS'?'':'TS';loadFleet()}FLEET.forEach(x=>{x.on=x.grp==='TS1'});saveFleet();renderFleet()};
 $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlMy').value=DM0;saveFleet();renderFleet()};
 
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
+initUitslagen({store});
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};

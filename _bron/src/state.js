@@ -15,7 +15,7 @@ export const SCHEMA = {
   area:    { def: 'B', key: 'wc_area', fix: v => (v && 'ABCD'.includes(v) && v.length === 1 ? v : undefined) },
   allC:    { def: false },
   mapStyle:{ def: 'chart', key: 'wc_style2', fix: v => (['chart','dim','photo','night'].includes(v) ? v : undefined) },
-  tab:     { def: 'Kaart', key: 'wc_tab', fix: v => (['Kaart','Race','Deeln','Regels','Uitleg'].includes(v) ? v : undefined) },
+  tab:     { def: 'Kaart', key: 'wc_tab', fix: v => (['Kaart','Race','Deeln','Uitslag','Regels','Uitleg'].includes(v) ? v : undefined) },
   voice:   { def: true, key: 'wc_voice', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   demoSpd: { def: 10, key: 'wc_demospd', fix: v => (+v === 10 || +v === 60 ? +v : undefined) },
   race:    { def: { start: null, fin: null }, key: 'wc_race', json: true,
@@ -26,11 +26,12 @@ export const SCHEMA = {
              de: s => { const o = JSON.parse(s); return o && o.t && Date.now() - o.t < H12 ? o.p || {} : undefined; } },
   fleets2: { def: {}, key: 'wc_fleets2026b', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
   myf2:    { def: {}, key: 'wc_myf2026b', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
-  dlCls:   { def: '', key: 'wc_dlcls', fix: v => (['', 'TS', 'T', 'ORC', 'MH'].includes(v) ? v : undefined) },
+  dlCls:   { def: '', key: 'wc_dlcls', fix: v => (['', 'TS1', 'ORC1', 'TS', 'T', 'ORC', 'MH'].includes(v) ? v : undefined) },
   sgAdj:   { def: {}, key: 'wc_sgadj', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
   voiceName:{ def: '', key: 'wc_voicename', fix: v => (typeof v === 'string' ? v : undefined) },
   wbGrp:   { def: 'TS1', key: 'wc_wbgrp', fix: v => (['TS1','TS2','TS3','T1','T2','T3','ORC1','ORC2','MH'].includes(v) ? v : undefined) },
   wbPos:   { def: 1, key: 'wc_wbpos', fix: v => { v = Math.round(+v); return v >= 1 && v <= 9 ? v : undefined; } },
+  uGrp:    { def: 'TS1', key: 'wc_ugrp', fix: v => (['TS1','ORC1','TS2','TS3'].includes(v) ? v : undefined) },
   layout:  { def: {}, key: 'wc_layout', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);
