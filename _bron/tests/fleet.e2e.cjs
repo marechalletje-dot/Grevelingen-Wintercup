@@ -14,7 +14,7 @@ const rows = p => p.$$eval('#dlBody tr', r => r.map(x => x.innerText.replace(/\s
     ok(r.filter(x => /Dream Machine/i.test(x)).length === 1 && r.some(x => /^ 803/.test(x) || /803/.test(x)), `${nm}: Dream Machine één keer (eigen rij)`);
     const ab = r.find(x => /A BOEN/.test(x)); ok(/0\.9989/.test(await p.$eval('#dlBody', e => e.innerHTML.match(/A BOEN[\s\S]*?value="([\d.]+)"/)[1])), `${nm}: A BOEN 0,9989`);
     ok(r.some(x => /X-POLE/.test(x) && /≈ ORC ToT/.test(x)), `${nm}: X-POLE in Toer-S met schatting`);
-    ok(r.filter(x => /vul een factor in/.test(x)).length === 13, `${nm}: 13 Toer-S-boten zonder rating (${r.filter(x => /vul een factor in/.test(x)).length})`);
+    ok(r.filter(x => /vul een factor in/.test(x)).length === 9, `${nm}: 9 Toer-S-boten zonder rating (${r.filter(x => /vul een factor in/.test(x)).length})`);
     await p.selectOption('#dlCls', 'ORC'); await p.waitForTimeout(200); r = await rows(p);
     ok(r.length === 12 && r.some(x => /VINDIO/.test(x)), `${nm}: ORC 11 + eigen rij (${r.length})`);
     await p.selectOption('#dlCls', 'T'); await p.waitForTimeout(200); r = await rows(p); ok(r.length === 40, `${nm}: Toer 39 + eigen rij (${r.length})`);
@@ -26,12 +26,21 @@ const rows = p => p.$$eval('#dlBody tr', r => r.map(x => x.innerText.replace(/\s
     await p.selectOption('#dlCls', 'ORC'); await p.waitForTimeout(200); ok(await p.inputValue('#dlMy') === '1.0924', `${nm}: in ORC 1.0924`);
     // rating invullen voor boot zonder rating
     await p.selectOption('#dlCls', 'TS'); await p.waitForTimeout(200);
-    const inp = p.locator('#dlBody tr', { hasText: 'BRUISER' }).locator('input.dlF'); await inp.fill('0.9500'); await inp.press('Enter'); await p.waitForTimeout(200);
-    r = await rows(p); ok(r.some(x => /BRUISER/.test(x) && /handmatig/.test(x) && /m$/.test(x.trim())), `${nm}: BRUISER handmatig 0,95 telt mee`);
+    const inp = p.locator('#dlBody tr', { hasText: 'AIR MOVER' }).locator('input.dlF'); await inp.fill('0.9500'); await inp.press('Enter'); await p.waitForTimeout(200);
+    r = await rows(p); ok(r.some(x => /AIR MOVER/.test(x) && /handmatig/.test(x) && /m$/.test(x.trim())), `${nm}: AIR MOVER handmatig 0,95 telt mee`);
     await p.reload(); await p.waitForSelector('#lpBody tr', { state: 'attached' }); await p.click('#tbDeeln').catch(() => {}); await p.waitForTimeout(300);
-    r = await rows(p); ok(r.some(x => /BRUISER/.test(x) && /handmatig/.test(x)), `${nm}: handmatige rating bewaard`);
+    r = await rows(p); ok(r.some(x => /AIR MOVER/.test(x) && /handmatig/.test(x)), `${nm}: handmatige rating bewaard`);
     await p.click('#dlReset'); await p.waitForTimeout(200);
     await p.click('#tbKaart'); await p.selectOption('#boatSel', 'dm');
+    // officiële startlijst Toer-S groep 1
+    await p.click('#tbKaart'); await p.selectOption('#boatSel', 'dm'); await p.click('#tbDeeln'); await p.waitForTimeout(300);
+    r = await rows(p); console.log('  dbg', r.find(x => /BRUISER/.test(x)), '|', r.find(x => /CAMELOT/.test(x)));
+    const fv = async b => +(await p.locator('#dlBody tr', { hasText: b }).first().locator('input.dlF').inputValue());
+    ok(r.some(x => /BRUISER/.test(x) && /groep 1/.test(x)) && Math.abs(await fv('BRUISER') - 0.98) < 1e-4, `${nm}: BRUISER 0,98 uit startlijst groep 1`);
+    ok(Math.abs(await fv('CAMELOT') - 1.021) < 1e-4, `${nm}: CAMELOT 1,0210 (was schatting)`);
+    await p.click('#dlGrp1'); await p.waitForTimeout(300);
+    const on = await p.$$eval('#dlBody tr:not(.off) input[type=checkbox]:checked', a => a.length);
+    ok(on === 14, `${nm}: alleen groep 1 aan (${on})`);
     ok(errs.length === 0, `${nm}: geen JS-fouten ${errs.join(';')}`); await ctx.close();
   }
   await b.close(); console.log(fails ? `${fails} FOUT(EN)` : 'alles ok'); process.exit(fails ? 1 : 0);

@@ -926,6 +926,7 @@ function renderFleet(){
 }
 ['dlOver','dlMy'].forEach(id=>$(id).addEventListener('change',()=>{saveFleet();renderFleet()}));
 $('dlAdd').onclick=()=>{const n=$('dlNewName').value.trim(),f=+$('dlNewF').value;if(!n||!(f>0.7&&f<1.3)){$('dlNewF').focus();return}FLEET.push({gc:'',zn:'',boat:n,type:$('dlNewType').value.trim(),f,src:'handmatig',on:true});$('dlNewName').value=$('dlNewType').value=$('dlNewF').value='';saveFleet();renderFleet()};
+$('dlGrp1').onclick=()=>{if(CLS()!=='TS'){ST.dlCls=BOATS[ST.boat].cls==='TS'?'':'TS';loadFleet()}FLEET.forEach(x=>{x.on=x.grp==='TS1'});saveFleet();renderFleet()};
 $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlMy').value=DM0;saveFleet();renderFleet()};
 
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}

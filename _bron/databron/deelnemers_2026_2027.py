@@ -137,11 +137,16 @@ E = {
  'LILITH':(0.9034,'≈ zelfde type: Spur (Bavaria 36) Toer 2025/26'),
  'LIONHEART':(0.8700,'≈ zelfde type: La Mattanza (vd Stad 40) Toer 2024/25'),
 }
+# Officiële startlijst Toer-S groep 1 (vlag H), ToT-I, mededelingenbord 10 okt 2026 (foto van Stefan) — gaat voor alles
+G1 = {'BIERKAAI':1.0594,'DEHLICIOUS':1.0322,'CAMELOT':1.0210,'ATHOMA':1.0200,'X-PERIENCE':1.0150,'XINIX':1.0100,'DREAM MACHINE':1.0029,
+ 'BUBBELS':0.9996,'SEELIG':0.9950,'A BOEN':0.9989,'ZARAFA':0.9925,'SOBAT KRAS':0.9890,'POGOLOCO':0.9880,'CHICAGO':0.9800,'BRUISER':0.9800}
+G1SRC = 'startlijst Toer-S groep 1 (vlag H), ToT-I, 10 okt 2026'
 out={'TS':[],'T':[],'ORC':[],'MH':[]}
 for line in L.split('\n'):
     n,t,p,c,note,zn,gc=line.split('|')
     e={'gc':gc,'zn':zn,'boat':n,'type':t,'port':p,'f':None,'src':'geen rating gevonden'}
-    if n in R: e['f'],e['src']=R[n]
+    if n in G1: e['f'],e['src'],e['grp']=G1[n],G1SRC,'TS1'
+    elif n in R: e['f'],e['src']=R[n]
     elif n in E: e['f'],e['src']=E[n]; e['est']=True
     out[c].append(e)
 cnt={k:len(v) for k,v in out.items()}; print(cnt, sum(cnt.values()))
