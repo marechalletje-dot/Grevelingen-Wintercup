@@ -34,8 +34,12 @@ export const SCHEMA = {
   uGrp:    { def: 'TS1', key: 'wc_ugrp', fix: v => (['TS1','ORC1','TS2','TS3'].includes(v) ? v : undefined) },
   wxDay:   { def: '', key: 'wc_wxday', fix: v => (typeof v === 'string' ? v : undefined) },
   wxModel: { def: 'auto', key: 'wc_wxmodel', fix: v => (['auto','knmi_seamless','icon_seamless','ecmwf_ifs025','best_match'].includes(v) ? v : undefined) },
+  wxOpen:  { def: false, key: 'wc_wxopen', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s === '1' },
   wxDemo:  { def: true, key: 'wc_wxdemo', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   wxData:  { def: null, key: 'wc_wxdata', json: true, fix: v => (v && Array.isArray(v.series) ? v : undefined) },
+  spiAnn:  { def: true, key: 'wc_spiann', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
+  spiOpen: { def: true, key: 'wc_spiopen', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
+  view:    { def: '', key: 'wc_view', fix: v => (['', 'map', 'legs'].includes(v) ? v : undefined) },
   layout:  { def: {}, key: 'wc_layout', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);

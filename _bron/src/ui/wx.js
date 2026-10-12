@@ -74,6 +74,7 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
   $('wxModel').onchange = () => store.set({ wxModel: $('wxModel').value });
   $('wxSim').onclick = () => { render(); renderSim(); };
   $('wxDemo').onchange = () => store.set({ wxDemo: $('wxDemo').checked });
+  if ($('rWx').tagName === 'DETAILS') { $('rWx').open = !!store.state.wxOpen; $('rWx').addEventListener('toggle', () => store.set({ wxOpen: $('rWx').open })); }
   fillSelects(); render();
   return {
     refresh: () => { if (WX && WX.day === day()) { const vis = !$('wxSimBox').hidden; render(); if (vis) renderSim(); } },

@@ -383,7 +383,7 @@ function show(fit){
       ds.map((sg,q)=>`<tr data-i="${i}" class="subrow" data-p="${i}" hidden><td class="no">${i+1}${String.fromCharCode(97+q)}</td><td>${esc(subName(l,sg.j))}</td><td></td>${twaCell(sg.tw)}<td class="r m k">${pad3(sg.mw)}</td><td class="r m nm">${sg.nm.toFixed(2)}</td><td class="r m tm">${fmtT(segTime(sg))}</td></tr>`).join('')}).join('');
   document.querySelectorAll('#lpBody tr.multi').forEach(tr=>tr.onclick=()=>{const open=!tr.classList.contains('open');tr.classList.toggle('open',open);document.querySelectorAll(`#lpBody tr.subrow[data-p="${tr.dataset.i}"]`).forEach(r=>r.hidden=!open)});
   $('lpTot').textContent=total.toFixed(1);const TT=legs.reduce((a,l)=>a+legTime(l),0);$('lpTotT').textContent=fmtT(TT);
-  {const sp=spiPlan(legs);$('spiPlan').innerHTML='<h3>Spinnaker-plan</h3>'+sp.html;CUR_SPI=sp}
+  {const sp=spiPlan(legs);$('spiPlan').innerHTML=sp.html;CUR_SPI=sp}
   document.querySelectorAll('#legs tr,#lpBody tr').forEach(tr=>{tr.onmouseenter=()=>hl(+tr.dataset.i);tr.onmouseleave=()=>hl(-1)});
   if(!$('tCrs').checked)document.querySelectorAll('.crs').forEach(t=>t.style.display='none');
   CUR={legs,c,S,total,used};
@@ -474,11 +474,13 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
    const markName=NAV.leg===0?'de gate':(NAV.leg===CUR.legs.length-1?'de finish':l.t);
    const side=mk&&mk.s?(mk.auto?` (pass. ${mk.s})`:` (rond ${mk.s})`):'';
    if(!(RACE.start&&Date.now()<RACE.start&&!G.demo))$('gCdTo').textContent=`einde rak ${NAV.leg+1}: ${markName}${side}`;G.cdLeg=NAV.leg;G.pr=pr;cdTick()}
+  {const vel=G.vmc!=null&&G.vmc>0.5?G.vmc:(G.sog>0.5?G.sog:null);let ttg=vel?dtw/vel:(isEnd?legTime(l)*(pr.rem/((pr.along+pr.rem)||1)):null);
+   if(ttg!=null){const s=Math.round(ttg*3600);$('gTtg').textContent=s>=3600?`${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('gTtgU').textContent=s>=3600?'u:min':'min:s'}else{$('gTtg').textContent='–';$('gTtgU').textContent='min'}}
   const eta=G.sog>0.5?pr.rem/G.sog:null;
   $('gRem').textContent=`Rest rak ${pr.rem.toFixed(2)} nm${eta?` · ±${fmtT(eta)}`:''} · ${Math.round(pr.xte*1852)} m naast lijn${isEnd?'':` · daarna ${to}`}`;
   $('gNext').setAttribute('x1',G.xy[0]);$('gNext').setAttribute('y1',G.xy[1]);$('gNext').setAttribute('x2',nx[0]);$('gNext').setAttribute('y2',nx[1]);
   gpsDraw()}
-function spiAlert(){if(!G.on||G.cdTarget==null||!CUR_SPI||!CUR_SPI.ev||!G.pr||G.started===false)return;
+function spiAlert(){if(!ST.spiAnn||!G.on||G.cdTarget==null||!CUR_SPI||!CUR_SPI.ev||!G.pr||G.started===false)return;
   const li=G.cdLeg,l=CUR.legs[li];if(!l)return;const pr=G.pr;const tEnd=(G.cdTarget-Date.now())/1000*(G.demo?demoSpd():1);
   const polyLen=pr.along+pr.rem,nmSum=l.s.reduce((a,b)=>a+b.nm,0)||polyLen;
   for(const e of CUR_SPI.ev){if(e.li!==li)continue;const key=ST.baan+'|'+ST.twd+'|'+li+'|'+e.kind+'|'+e.lab;if(G.spiDone&&G.spiDone.has(key))continue;
@@ -493,6 +495,9 @@ function spiAlert(){if(!G.on||G.cdTarget==null||!CUR_SPI||!CUR_SPI.ev||!G.pr||G.
     clearTimeout(G.spiTimer);G.spiTimer=setTimeout(()=>{$('spiPop').hidden=true},G.demo?6000:60000);break}}
 $('spOk').onclick=()=>{$('spiPop').hidden=true};
 // ---------- startprocedure, stopwatch, racemodus ----------
+function setSpiAnn(on){ST.spiAnn=on;$('spiAnnIn').checked=on;$('spiLeadIn').disabled=!on;$('rbSpi').setAttribute('aria-pressed',on?'true':'false');$('rbSpi').textContent=on?'spi aan':'spi uit';if(!on)$('spiPop').hidden=true}
+setSpiAnn(ST.spiAnn);$('spiAnnIn').onchange=e=>setSpiAnn(e.target.checked);$('rbSpi').onclick=()=>setSpiAnn(!ST.spiAnn);
+$('spiPlanBox').open=ST.spiOpen;$('spiPlanBox').addEventListener('toggle',()=>{ST.spiOpen=$('spiPlanBox').open});
 $('spiLeadIn').value=ST.spiLead;$('spiLeadIn').addEventListener('change',e=>{const v=Math.round(+e.target.value);if(v>=1&&v<=15){ST.spiLead=v;}else e.target.value=ST.spiLead});
 const tStr=ms=>new Date(ms).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 // Racetoestand: start/finish staan in de centrale store (persistent); 'fired' is alleen runtime.
@@ -582,8 +587,13 @@ $('voiceSel').onchange=e=>{ST.voiceName=e.target.value;pickVoice()};
 $('voiceTest').onclick=()=>{unlockAudio();speak(nextLegKeys(3,88,180,'BB'),`Over twee minuten: rak 3. Koers ${digits(88)}. T.W.A. 180, bakboord.`,true,true)};
 $('recOpen').onclick=()=>{unlockAudio();CLIPSX.open()};
 // ---------- alleen kaart (racemodus) ----------
-function mapOnly(on){document.body.classList.toggle('maponly',on);$('mapOnly').setAttribute('aria-pressed',on?'true':'false');$('mapOnly').textContent=on?'vensters':'alleen kaart';setTimeout(()=>{try{applyVB()}catch(e){}},30)}
-$('mapOnly').onclick=()=>mapOnly(!document.body.classList.contains('maponly'));
+function setView(v){document.body.classList.toggle('maponly',v==='map');document.body.classList.toggle('legsonly',v==='legs');
+  $('mapOnly').setAttribute('aria-pressed',v==='map'?'true':'false');$('legsOnly').setAttribute('aria-pressed',v==='legs'?'true':'false');
+  $('mapOnly').textContent=v==='map'?'alle vensters':'alleen kaart';$('legsOnly').textContent=v==='legs'?'alle vensters':'alleen rakken';
+  if(v==='legs'){try{$('legsPanel').open=true}catch(e){}}ST.view=v;setTimeout(()=>{try{applyVB()}catch(e){}},30)}
+function mapOnly(on){setView(on?'map':'')}
+$('mapOnly').onclick=()=>setView(document.body.classList.contains('maponly')?'':'map');
+$('legsOnly').onclick=()=>setView(document.body.classList.contains('legsonly')?'':'legs');
 function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const now=p.timestamp||Date.now();
   if(G.prev){const d=Math.hypot(xy[0]-G.prev.xy[0],xy[1]-G.prev.xy[1]);const dt=(now-G.prev.t)/3600000;
     if(d*1852>4){G.cogCalc=brgT(G.prev.xy,xy);if(dt>0)G.sogCalc=d/dt;G.prev={xy,t:now}}}

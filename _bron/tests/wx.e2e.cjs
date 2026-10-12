@@ -15,7 +15,7 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE); await p.waitForSelector('#lpBody tr', { state: 'attached' }); await p.waitForTimeout(300);
     ok((await p.locator('#wxDay option').count()) >= 4, `${nm}: dagkeuze`);
-    await p.click('#wxGet'); await p.waitForTimeout(500);
+    await p.evaluate(() => { document.getElementById('rWx').open = true; }); await p.click('#wxGet'); await p.waitForTimeout(500);
     ok(asked && /models=(knmi_seamless|ecmwf_ifs025)/.test(asked) && /wind_speed_unit=kn/.test(asked), `${nm}: API-aanvraag met model en knopen`);
     ok(await p.isVisible('#wxOut') && (await p.locator('#wxBody tr').count()) === 9, `${nm}: uurtabel 09–17 (${await p.locator('#wxBody tr').count()})`);
     ok((await p.locator('#wxBody tr.race').count()) >= 2, `${nm}: race-uren gemarkeerd`);
