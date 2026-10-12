@@ -107,7 +107,21 @@ function declutter(k){
   document.querySelectorAll('#course .corrlab,#course .crs').forEach(e=>{if(e.style.display==='none')return;e.style.visibility='';
     for(const sd of [1,-1,1.8,-1.8]){placeLab(e,sd,k);const r=R(e);if(!hit(r)){placed.push(r);return}}e.style.visibility='hidden'});
 }
-function fitTo(b,pad=0.12){const r=svg.getBoundingClientRect();const ar=r.width/r.height;let w=b.w*(1+pad*2),h=b.h*(1+pad*2);if(w/h<ar)w=h*ar;else h=w/ar;vb={x:b.x+b.w/2-w/2,y:b.y+b.h/2-h/2,w,h};applyVB()}
+// vrij kaartgebied (px t.o.v. de kaart): in 'alleen kaart' niet onder het GPS-vak linksboven of de knoppen rechtsboven
+function freeArea(){const r=svg.getBoundingClientRect();const A={x:0,y:0,w:r.width,h:r.height};
+  if(!document.body.classList.contains('maponly'))return A;const h=$('gpsHud');if(!h||h.hidden||!h.offsetWidth)return A;
+  const H=h.getBoundingClientRect(),g=8;const t=document.querySelector('.tools');const T=t&&t.offsetWidth?t.getBoundingClientRect():null;
+  const hr=H.right-r.left+g,hb=H.bottom-r.top+g,tl=T?T.left-r.left-g:r.width,tb=T?T.bottom-r.top+g:0;
+  return [{x:hr,y:0,w:Math.max(1,tl-hr),h:r.height},{x:0,y:Math.max(hb,tb),w:r.width,h:Math.max(1,r.height-Math.max(hb,tb))}]}
+function fitTo(b,pad=0.12){const r=svg.getBoundingClientRect();const ar=r.width/r.height;let w=b.w*(1+pad*2),h=b.h*(1+pad*2);
+  const F=freeArea();if(Array.isArray(F)){// beste deelgebied: grootste schaal
+    {const q=Math.max(pad,0.2);b={...b,w:b.w*1.12};w=b.w*(1+q*2);h=b.h*(1+q*2)}// ruimte voor boeinamen (die staan rechts van de boei)
+    let best=null;for(const a of F){const s=Math.min(a.w/w,a.h/h);if(!best||s>best.s)best={s,a}}const {s,a}=best;
+    vb={w:r.width/s,h:r.height/s,x:b.x+b.w/2-(a.x+a.w/2)/s,y:b.y+b.h/2-(a.y+a.h/2)/s};applyVB();return}
+  if(w/h<ar)w=h*ar;else h=w/ar;vb={x:b.x+b.w/2-w/2,y:b.y+b.h/2-h/2,w,h};applyVB()}
+/** Centreer punt xy in het vrije kaartgebied. */
+function centerOn(xy){const r=svg.getBoundingClientRect();const F=freeArea();const a=Array.isArray(F)?F.reduce((m,x)=>x.w*x.h>m.w*m.h?x:m):F;
+  vb.x=xy[0]-(a.x+a.w/2)*vb.w/r.width;vb.y=xy[1]-(a.y+a.h/2)*vb.h/r.height;applyVB()}
 function zoom(f,cx,cy){if(cx===undefined){cx=vb.x+vb.w/2;cy=vb.y+vb.h/2}const nw=Math.min(Math.max(vb.w*f,0.25),260);const s=nw/vb.w;vb={x:cx-(cx-vb.x)*s,y:cy-(cy-vb.y)*s,w:vb.w*s,h:vb.h*s};applyVB()}
 function pt(e){const r=svg.getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*k-vb.w)/2,oy=(r.height*k-vb.h)/2;return [vb.x-ox+(e.clientX-r.left)*k,vb.y-oy+(e.clientY-r.top)*k,k]}
 function toScreen(x,y){const r=svg.getBoundingClientRect(),c=$('chart').getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);const ox=(r.width*k-vb.w)/2,oy=(r.height*k-vb.h)/2;return [(x-vb.x+ox)/k+r.left-c.left,(y-vb.y+oy)/k+r.top-c.top]}
@@ -590,7 +604,7 @@ $('recOpen').onclick=()=>{unlockAudio();CLIPSX.open()};
 function setView(v){document.body.classList.toggle('maponly',v==='map');document.body.classList.toggle('legsonly',v==='legs');
   $('mapOnly').setAttribute('aria-pressed',v==='map'?'true':'false');$('legsOnly').setAttribute('aria-pressed',v==='legs'?'true':'false');
   $('mapOnly').textContent=v==='map'?'alle vensters':'alleen kaart';$('legsOnly').textContent=v==='legs'?'alle vensters':'alleen rakken';
-  if(v==='legs'){try{$('legsPanel').open=true}catch(e){}}ST.view=v;setTimeout(()=>{try{applyVB()}catch(e){}},30)}
+  if(v==='legs'){try{$('legsPanel').open=true}catch(e){}}ST.view=v;setTimeout(()=>{try{if(v==='legs')applyVB();else if(LV.i>=0)fitLeg();else fitTo(curBox)}catch(e){}},30)}
 function mapOnly(on){setView(on?'map':'')}
 $('mapOnly').onclick=()=>setView(document.body.classList.contains('maponly')?'':'map');
 $('legsOnly').onclick=()=>setView(document.body.classList.contains('legsonly')?'':'legs');
@@ -612,7 +626,7 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
   G.outside=xy[0]<ALL.x-1||xy[0]>ALL.x+ALL.w+1||xy[1]<ALL.y-1||xy[1]>ALL.y+ALL.h+1;
   if(G.outside){const st=CUR?CUR.S.start:[0,0];const km=Math.hypot(xy[0]-st[0],xy[1]-st[1])*1.852;$('gMsg').style.color='var(--ink)';$('gMsg').textContent=`GPS werkt ✓ — je bent buiten de Grevelingen (${km<100?km.toFixed(1):Math.round(km)} km van de start).`}else $('gMsg').style.color='';
   gpsUpdate();
-  if(G.follow){if(G.outside&&!G.outFit){G.outFit=true;const r=svg.getBoundingClientRect();vb.w=3;vb.h=3*(r.height/r.width||0.7)}if(LV.i>=0&&!G.fitted&&!G.outside){fitLeg();G.fitted=true}else{vb.x=xy[0]-vb.w/2;vb.y=xy[1]-vb.h/2;applyVB()}}
+  if(G.follow){if(G.outside&&!G.outFit){G.outFit=true;const r=svg.getBoundingClientRect();vb.w=3;vb.h=3*(r.height/r.width||0.7)}if(LV.i>=0&&!G.fitted&&!G.outside){fitLeg();G.fitted=true}else centerOn(xy)}
 }
 function gpsErr(e){const m=e.code===1?'Geen toestemming voor locatie. Sta locatie toe voor deze site (in de Claude-app werkt GPS mogelijk niet; gebruik dan de GitHub-versie).':e.code===2?'Geen GPS-positie beschikbaar.':e.code===3?'GPS reageert niet (time-out), probeert opnieuw…':'GPS-fout.';if(e.code===1||!(G.msgHold>Date.now()))$('gMsg').textContent=m;if(e.code===1)gpsStop(true)}
 async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')G.wake=await navigator.wakeLock.request('screen')}catch(e){}}
@@ -651,7 +665,7 @@ $('gDemoSpd').value=String(ST.demoSpd);$('gDemoSpd').onchange=e=>{ST.demoSpd=+e.
 $('gDemo').onclick=()=>{try{G.ac&&G.ac.resume()}catch(_){}if(G.demo){demoStop();gpsStop()}else demoStart()};
 $('gpsBtn').onclick=()=>{setTab(ST.tab==='Race'?'Kaart':'Race')};
 $('gStop').onclick=()=>gpsStop();
-$('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else{vb.x=G.xy[0]-vb.w/2;vb.y=G.xy[1]-vb.h/2;applyVB()}}};
+$('gFollow').onclick=()=>{G.follow=!G.follow;$('gFollow').setAttribute('aria-pressed',G.follow?'true':'false');if(G.follow&&G.xy){G.fitted=false;if(LV.i>=0){fitLeg();G.fitted=true}else centerOn(G.xy)}};
 
 
 // ---------- achtergrondkaart Nederland (PDOK-tegels, alleen online; offline uit cache) ----------

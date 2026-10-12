@@ -32,8 +32,9 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
     await p.click('#nxOk'); ok(!(await p.isVisible('#nxtPop')), `${nm}: OK sluit pop-up`);
     // alleen kaart
     await p.click('#mapOnly'); await p.waitForTimeout(300);
-    const hidden = await p.evaluate(() => ['nav.tabs', '#raceBar', '#legsPanel', '#gpsHud'].map(s => { const e = document.querySelector(s); return !e || e.offsetParent === null; }));
-    ok(hidden.every(Boolean), `${nm}: alleen kaart verbergt tabs, balk, rakken en GPS (${hidden})`);
+    const hidden = await p.evaluate(() => ['nav.tabs', '#raceBar', '#legsPanel'].map(s => { const e = document.querySelector(s); return !e || e.offsetParent === null; }));
+    ok(hidden.every(Boolean), `${nm}: alleen kaart verbergt tabs, balk en rakken (${hidden})`);
+    ok(await p.evaluate(() => { const h = document.getElementById('gpsHud'); return h.hidden || h.offsetParent !== null; }), `${nm}: GPS-vak blijft zichtbaar als GPS aan staat`);
     const mh = (await p.locator('#map').boundingBox()).height; const vh = await p.evaluate(() => innerHeight);
     ok(mh > vh * 0.85, `${nm}: kaart vult het scherm (${Math.round(mh)} van ${vh})`);
     ok(await p.isVisible('#mapOnly') && await p.isVisible('#windInd'), `${nm}: knop en windpijl blijven zichtbaar`);

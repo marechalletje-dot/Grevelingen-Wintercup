@@ -23,8 +23,14 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
     ok(/BTW/.test(await p.textContent('.gpshud .nav3')) && /DTW/.test(await p.textContent('.gpshud .nav3')) && /TTG/.test(await p.textContent('.gpshud .nav3')), `${nm}: labels BTW/DTW/TTG`);
     const fs = await p.$eval('#gDtw', e => parseFloat(getComputedStyle(e).fontSize)); ok(fs >= 20, `${nm}: grote cijfers (${fs}px)`);
     // alleen kaart → alleen rakken → alle vensters
-    await p.click('#mapOnly'); await p.waitForTimeout(200);
-    ok(await p.evaluate(() => document.body.classList.contains('maponly')) && !(await p.isVisible('#legsPanel')) && !(await p.isVisible('#gpsHud')), `${nm}: alleen kaart, geen rakkenvenster`);
+    await p.evaluate(() => { const f = document.getElementById('gFollow'); if (f.getAttribute('aria-pressed') === 'true') f.click(); }); await p.click('#mapOnly'); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => document.body.classList.contains('maponly')) && !(await p.isVisible('#legsPanel')), `${nm}: alleen kaart, geen rakkenvenster`);
+    const hud = await p.locator('#gpsHud').boundingBox();
+    const mp = await p.locator('#map').boundingBox();
+    ok(hud && hud.x - mp.x < 20 && hud.y - mp.y < 20 && await p.isVisible('#gBtw') && await p.isVisible('#gDtw') && await p.isVisible('#gTtg'), `${nm}: GPS-vak linksboven met BTW/DTW/TTG (${Math.round(hud.x - mp.x)},${Math.round(hud.y - mp.y)})`);
+    const crs = await p.locator('#course').boundingBox();
+    const over = !(crs.x >= hud.x + hud.width || crs.y >= hud.y + hud.height || crs.x + crs.width <= hud.x || crs.y + crs.height <= hud.y);
+    ok(!over, `${nm}: baan niet onder GPS-vak (baan ${[crs.x, crs.y, crs.width, crs.height].map(Math.round)} · vak ${[hud.x, hud.y, hud.width, hud.height].map(Math.round)})`);
     ok(await p.isVisible('#legsOnly'), `${nm}: knop alleen rakken zichtbaar in kaartmodus`);
     await p.click('#legsOnly'); await p.waitForTimeout(200);
     ok(await p.evaluate(() => document.body.classList.contains('legsonly') && !document.body.classList.contains('maponly')) && await p.isVisible('#lpBody'), `${nm}: alleen rakken`);
