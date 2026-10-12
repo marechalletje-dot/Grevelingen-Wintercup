@@ -4,6 +4,7 @@
 // - De indeling wordt per schermtype (telefoon / groot scherm) bewaard in de centrale store (sleutel 'layout').
 export const PANELS = [
   { id: 'boot',    sel: '.rail > .r-wind',   title: 'Boot & wind' },
+  { id: 'wx',      sel: '.rail > .r-wx',     title: 'Windverwachting' },
   { id: 'baan',    sel: '.rail > .r-course', title: 'Kies baan' },
   { id: 'gebied',  sel: '.rail > .r-area',   title: 'Startgebied' },
   { id: 'startgate', sel: '.rail > .r-sg',   title: 'Start & gate' },
@@ -33,7 +34,7 @@ export const PANELS = [
   { id: 'ug2',     sel: '#tabUitleg > .ug-card:nth-of-type(2)', title: 'Achtergrond: banenkaart' },
   { id: 'ug3',     sel: '#tabUitleg > .ug-card:nth-of-type(3)', title: 'Achtergrond: deelnemers' },
 ];
-const MOBILE_ORDER = ['boot', 'baan', 'gebied', 'kaart', 'startgate', 'info', 'stem', 'export', 'legenda'];
+const MOBILE_ORDER = ['boot', 'wx', 'baan', 'gebied', 'kaart', 'startgate', 'info', 'stem', 'export', 'legenda'];
 const clone = o => JSON.parse(JSON.stringify(o || {}));
 
 export function initPanels({ store, onResize = () => {} }) {

@@ -32,6 +32,10 @@ export const SCHEMA = {
   wbGrp:   { def: 'TS1', key: 'wc_wbgrp', fix: v => (['TS1','TS2','TS3','T1','T2','T3','ORC1','ORC2','MH'].includes(v) ? v : undefined) },
   wbPos:   { def: 1, key: 'wc_wbpos', fix: v => { v = Math.round(+v); return v >= 1 && v <= 9 ? v : undefined; } },
   uGrp:    { def: 'TS1', key: 'wc_ugrp', fix: v => (['TS1','ORC1','TS2','TS3'].includes(v) ? v : undefined) },
+  wxDay:   { def: '', key: 'wc_wxday', fix: v => (typeof v === 'string' ? v : undefined) },
+  wxModel: { def: 'auto', key: 'wc_wxmodel', fix: v => (['auto','knmi_seamless','icon_seamless','ecmwf_ifs025','best_match'].includes(v) ? v : undefined) },
+  wxDemo:  { def: true, key: 'wc_wxdemo', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
+  wxData:  { def: null, key: 'wc_wxdata', json: true, fix: v => (v && Array.isArray(v.series) ? v : undefined) },
   layout:  { def: {}, key: 'wc_layout', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);

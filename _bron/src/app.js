@@ -13,6 +13,8 @@ import { BOATS, FLEETS, CLASSES, FLEET_SRC } from './data/boats.js';
 import { initPanels } from './ui/panels.js';
 import { initRegels } from './ui/regels.js';
 import { initUitslagen } from './ui/uitslagen.js';
+import { initWx } from './ui/wx.js';
+import { slotTimes } from './core/startseq.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -620,15 +622,20 @@ function demoSpd(){return ST.demoSpd}
 function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.nxDone=null;G.started=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
   G.on=true;G.demo=true;G.trail=[];G.prev=null;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');$('gDemo').setAttribute('aria-pressed','true');
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');gpsEls();$('gpsL').style.display='';NAV.leg=0;G.adv=0;hudPanel(true);fitTo(startBox,0.6);
-  const pts=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0)pts.push(q)}));
-  const KN=6,DT=1;let seg=0,t=0,simT=Date.now();
+  const pts=[],tws=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0){pts.push(q);if(j>0)tws.push(l.s[j-1]?l.s[j-1].tw:brgT(l.p[j-1],q))}}));
+  const DW=(typeof WXU!=='undefined'&&WXU.demoWind)?WXU.demoWind():null;
+  const DT=1;let seg=0,t=0,simT=DW?DW.start:Date.now();
+  const windNow=()=>DW?DW.at(simT):{twd:ST.twd,tws:ST.tws};
+  const knAt=i=>{const w=windNow();const p=corePerf(BOATS[ST.boat].polar,navTwaOf(w.twd,tws[Math.min(i,tws.length-1)]).a,Math.max(4,w.tws),ST.eff);return Math.max(0.5,p.vmc)};
+  $('gMsg').textContent=DW?`Proefvaart met verwachte wind vanaf ${new Date(simT).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}; snelheid uit de polar.`:'Proefvaart met de ingestelde wind; snelheid uit de polar.';
   const toLLd=(x,y)=>[-y/60+51.74,x/(Math.cos(51.74*Math.PI/180)*60)+3.95];
   clearInterval(G.demoTimer);
-  G.demoTimer=setInterval(()=>{const SPEED=demoSpd();let step=KN*SPEED*DT/3600;
+  G.demoTimer=setInterval(()=>{const SPEED=demoSpd();const KN=knAt(seg);let step=KN*SPEED*DT/3600;
     while(step>0&&seg<pts.length-1){const a=pts[seg],b=pts[seg+1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const left=L*(1-t);if(step<left){t+=step/L;step=0}else{step-=left;seg++;t=0}}
     if(seg>=pts.length-1){demoStop();$('gMsg').textContent='Proefvaart klaar: finish bereikt.';return}
     const a=pts[seg],b=pts[seg+1];const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;const [la,lo]=toLLd(x,y);simT+=DT*1000*SPEED;
-    gpsFix({timestamp:simT,coords:{latitude:la,longitude:lo,accuracy:5,speed:KN/1.943844,heading:brgT(a,b)}})},DT*1000)}
+    gpsFix({timestamp:simT,coords:{latitude:la,longitude:lo,accuracy:5,speed:KN/1.943844,heading:brgT(a,b)}});
+    if(DW){const w=windNow();$('gMsg').textContent=`Proefvaart ${new Date(simT).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})} · verwachte wind ${String(w.twd).padStart(3,'0')}° ${Math.round(w.tws)} kn · ${KN.toFixed(1)} kn`}},DT*1000)}
 function demoStop(){clearInterval(G.demoTimer);G.demoTimer=null;G.demo=false;$('gDemo').setAttribute('aria-pressed','false')}
 $('gDemoSpd').value=String(ST.demoSpd);$('gDemoSpd').onchange=e=>{ST.demoSpd=+e.target.value;};
 $('gDemo').onclick=()=>{try{G.ac&&G.ac.resume()}catch(_){}if(G.demo){demoStop();gpsStop()}else demoStart()};
@@ -932,6 +939,11 @@ $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlM
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
 initUitslagen({store});
+var WXU=initWx({store,getLegs:()=>CUR&&CUR.legs,getCtx:calcCtx,
+  getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
+  applyWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}});
+store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
+
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
