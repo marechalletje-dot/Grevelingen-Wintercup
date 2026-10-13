@@ -17,6 +17,7 @@ import { initWx } from './ui/wx.js';
 import { initWxField } from './ui/wxfield.js';
 import { initAnalysis, recordFix, savePreSim } from './ui/analysis.js';
 import { slotTimes } from './core/startseq.js';
+import { beatAngle, laylines, gateFromLine } from './core/layline.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -134,10 +135,11 @@ let drag=null,down=null;const ptrs=new Map();
 function setSG(k,xy){const adj=JSON.parse(JSON.stringify(ST.sgAdj||{}));const a=adj[ST.area]||(adj[ST.area]={});
   if(CUR){const o=k==='start'?'g':'s';if(!a[o])a[o]=xyLL(...CUR.S[o==='s'?'start':'gate'])}
   a[k==='start'?'s':'g']=xyLL(xy[0],xy[1]);ST.sgAdj=adj;show(false)}
-svg.addEventListener('pointerdown',e=>{const t=e.target;if(!t.classList||!t.classList.contains('sgh')||document.body.classList.contains('race'))return;
-  e.stopPropagation();e.preventDefault();const k=t.dataset.k;try{svg.setPointerCapture(e.pointerId)}catch(_){}let raf=0,last=null;svg.classList.add('sgdrag');
+svg.addEventListener('pointerdown',e=>{const t=e.target;if(!t.classList||!t.classList.contains('sgh'))return;
+  if(document.body.classList.contains('race')&&!(document.body.classList.contains('gdon')&&t.dataset.k==='gate'))return;// race: alleen de bovenboei, en alleen met de knop 'boei' aan
+  e.stopPropagation();e.preventDefault();const k=t.dataset.k;try{svg.setPointerCapture(e.pointerId)}catch(_){}let raf=0,last=null;svg.classList.add('sgdrag');document.body.classList.add('gddrag');
   const mv=ev=>{ev.stopPropagation();last=pt(ev);if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(last)setSG(k,last)})};
-  const up=ev=>{ev.stopPropagation();svg.removeEventListener('pointermove',mv,true);svg.removeEventListener('pointerup',up,true);svg.removeEventListener('pointercancel',up,true);svg.classList.remove('sgdrag');if(raf)cancelAnimationFrame(raf);if(last)setSG(k,last)};
+  const up=ev=>{ev.stopPropagation();svg.removeEventListener('pointermove',mv,true);svg.removeEventListener('pointerup',up,true);svg.removeEventListener('pointercancel',up,true);svg.classList.remove('sgdrag');document.body.classList.remove('gddrag');if(raf)cancelAnimationFrame(raf);if(last)setSG(k,last)};
   svg.addEventListener('pointermove',mv,true);svg.addEventListener('pointerup',up,true);svg.addEventListener('pointercancel',up,true)},true);
 function sgFromFields(){if(!CUR)return;const nm=+String($('sgDist').value).replace(',','.'),mc=+String($('sgCrs').value).replace(',','.');if(!(nm>=0.05&&nm<=5)||isNaN(mc))return;
   const st=CUR.S.start,g=offsetNm(st,nm,norm360(mc+D.decl));const adj=JSON.parse(JSON.stringify(ST.sgAdj||{}));adj[ST.area]={s:xyLL(...st),g:xyLL(...g)};ST.sgAdj=adj;show(false)}
@@ -351,6 +353,17 @@ function show(fit){
    const a=el('path',{class:'arrow fw',d:'M7,0L-5,-5.5L-2,0L-5,5.5Z','data-s':1.6},gm);a.dataset.x=wx-wx0*0.05;a.dataset.y=wy-wy0*0.05;a.dataset.a=Math.atan2(-wy0,-wx0)*180/Math.PI;
    const t=el('text',{class:'wtag',x:wx+wx0*0.05,y:wy+wy0*0.05},gm);t.textContent=`wind ${ST.twd}°`}
   {const hg=el('g',{class:'sgh-g'},gm);for(const [k,q] of [['gate',S.gate],['start',S.start]])el('circle',{class:'sgh','data-r':15,'data-k':k,cx:q[0],cy:q[1]},hg)}
+  // laylines uit de polar naar de bovenboei en (in de race) naar het merk van het huidige kruisrak; maten bovenboei t.o.v. de startlijn
+  try{const P=BOATS[ST.boat].polar,ba=beatAngle(P,ST.tws),mag=h=>pad3(Math.round(((h-D.decl)%360+360)%360)%360);
+   const lgG=el('g',{class:'layl-g'},gm);const len=Math.max(0.6,gLen*1.3);const mks=[[S.gate,'bovenboei']];
+   if(document.body.classList.contains('race')&&NAV.leg>0&&legs[NAV.leg]){const l=legs[NAV.leg],q=l.p[l.p.length-1],sg=l.s[l.s.length-1];if(sg&&navTwaOf(ST.twd,sg.tw).a<ba+8)mks.push([q,l.t])}
+   let gl=null;
+   mks.forEach(([m,nm],mi)=>{const L=laylines(m,ST.twd,ba,len);if(mi===0)gl=L;
+     for(const [k,o] of [['sb',L.sb],['bb',L.bb]]){el('line',{class:'layl '+k,x1:o.from[0],y1:o.from[1],x2:m[0],y2:m[1]},lgG);
+       const t=el('text',{class:'lab laylab '+k},el('g',{class:'mk layk'},lgG));t.dataset.x=o.from[0];t.dataset.y=o.from[1];t.textContent=`${k==='sb'?'SB':'BB'} ${mag(o.hdg)}`}});
+   const sh=pingXY('ship'),pn=pingXY('pin');const GF=gateFromLine(S.start,S.gate,sh&&pn?[pn,sh]:null);
+   $('gdInfo').innerHTML=`<b>Bovenboei</b> <span class="gd-n">${GF.perp.toFixed(2)} nm</span> loodrecht op de startlijn${sh&&pn?'':' <small>(lijn haaks op de boei)</small>'} · koers <span class="gd-n">${mag(GF.crs)}M</span> vanaf de startlijn${gl?` · laylines <span class="sb">SB ${mag(gl.sb.hdg)}M</span> / <span class="bb">BB ${mag(gl.bb.hdg)}M</span> <small>(kruishoek ${Math.round(ba)}° bij ${ST.tws} kn)</small>`:''}`;
+  }catch(e){console.error('laylines',e)}
   {const dc=distCrs(S.start,S.gate,D.decl);if(document.activeElement!==$('sgDist'))$('sgDist').value=dc.nm.toFixed(2);if(document.activeElement!==$('sgCrs'))$('sgCrs').value=Math.round(dc.mw)%360;
    $('sgHint').textContent=`Start ${SG_SRC.start}, gate ${SG_SRC.gate}. Sleep de lichtblauwe cirkels op de kaart om ze te verplaatsen.`;$('sgReset').hidden=!ST.sgAdj[ST.area]}
   windInd();
@@ -905,6 +918,13 @@ function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Analyse','Deeln','Ui
   else{if(G.on)gpsStop()}
   wakeLock(t==='Race')}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$('gdBtn').onclick=()=>{const on=!document.body.classList.contains('gdon');document.body.classList.toggle('gdon',on);$('gdBtn').setAttribute('aria-pressed',on?'true':'false');if(on){G.follow=false;try{$('gFollow').setAttribute('aria-pressed','false')}catch(e){}}show(false);if(on&&CUR&&CUR.S)setTimeout(()=>{try{const a=CUR.S.start,g=CUR.S.gate,L=Math.max(0.6,Math.hypot(g[0]-a[0],g[1]-a[1])*1.3);fitTo({x:Math.min(a[0],g[0])-L*0.6,y:Math.min(a[1],g[1])-L*0.6,w:Math.abs(g[0]-a[0])+L*1.2,h:Math.abs(g[1]-a[1])+L*1.2},0.1);placeFree(g)}catch(e){}},30)};// inzoomen op start, boei en laylines
+/** Zet punt xy op een plek van de kaart die niet onder een vak (GPS, rakken, knoppen) ligt. */
+function placeFree(xy){const r=svg.getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);
+  const C=[];for(let i=1;i<10;i++)for(let j=1;j<10;j++)C.push([i/10,j/10]);C.sort((a,b)=>Math.hypot(a[0]-.5,a[1]-.42)-Math.hypot(b[0]-.5,b[1]-.42));
+  for(const [fx,fy] of C){const X=r.left+r.width*fx,Y=r.top+r.height*fy;const e=document.elementFromPoint(X,Y);
+    if(e&&(e===svg||svg.contains(e))){const [sx,sy]=toScreen(xy[0],xy[1]);const c=$('chart').getBoundingClientRect();vb.x+=(sx+c.left-X)*k;vb.y+=(sy+c.top-Y)*k;applyVB();return}}
+  centerOn(xy)}
 // ---------- deelnemers & marges ----------
 const CLS=()=>ST.dlCls&&FLEETS[ST.dlCls]?ST.dlCls:BOATS[ST.boat].cls;
 const myKey=()=>ST.boat+'|'+CLS();
