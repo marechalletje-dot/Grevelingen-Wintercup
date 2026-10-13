@@ -17,7 +17,7 @@ import { initWx } from './ui/wx.js';
 import { initWxField } from './ui/wxfield.js';
 import { initAnalysis, recordFix, savePreSim } from './ui/analysis.js';
 import { slotTimes } from './core/startseq.js';
-import { beatAngle, laylines, gateFromLine } from './core/layline.js';
+import { beatAngle, gybeAngle, laylines, gateFromLine } from './core/layline.js';
 import { cutPassMarks } from './core/passmarks.js';
 
 const D=window.__D;
@@ -367,17 +367,6 @@ function show(fit){
    const a=el('path',{class:'arrow fw',d:'M7,0L-5,-5.5L-2,0L-5,5.5Z','data-s':1.6},gm);a.dataset.x=wx-wx0*0.05;a.dataset.y=wy-wy0*0.05;a.dataset.a=Math.atan2(-wy0,-wx0)*180/Math.PI;
    const t=el('text',{class:'wtag',x:wx+wx0*0.05,y:wy+wy0*0.05},gm);t.textContent=`wind ${ST.twd}°`}
   {const hg=el('g',{class:'sgh-g'},gm);for(const [k,q] of [['gate',S.gate],['start',S.start]])el('circle',{class:'sgh','data-r':15,'data-k':k,cx:q[0],cy:q[1]},hg)}
-  // laylines uit de polar naar de bovenboei en (in de race) naar het merk van het huidige kruisrak; maten bovenboei t.o.v. de startlijn
-  try{const P=BOATS[ST.boat].polar,ba=beatAngle(P,ST.tws),mag=h=>pad3(Math.round(((h-D.decl)%360+360)%360)%360);
-   const lgG=el('g',{class:'layl-g'},gm);const len=Math.max(0.6,gLen*1.3);const mks=[[S.gate,'bovenboei']];
-   if(document.body.classList.contains('race')&&NAV.leg>0&&legs[NAV.leg]){const l=legs[NAV.leg],q=l.p[l.p.length-1],sg=l.s[l.s.length-1];if(sg&&navTwaOf(ST.twd,sg.tw).a<ba+8)mks.push([q,l.t])}
-   let gl=null;
-   mks.forEach(([m,nm],mi)=>{const L=laylines(m,ST.twd,ba,len);if(mi===0)gl=L;
-     for(const [k,o] of [['sb',L.sb],['bb',L.bb]]){el('line',{class:'layl '+k,x1:o.from[0],y1:o.from[1],x2:m[0],y2:m[1]},lgG);
-       const t=el('text',{class:'lab laylab '+k},el('g',{class:'mk layk'},lgG));t.dataset.x=o.from[0];t.dataset.y=o.from[1];t.textContent=`${k==='sb'?'SB':'BB'} ${mag(o.hdg)}`}});
-   const sh=pingXY('ship'),pn=pingXY('pin');const GF=gateFromLine(S.start,S.gate,sh&&pn?[pn,sh]:null);
-   $('gdInfo').innerHTML=`<b>Bovenboei</b> <span class="gd-n">${GF.perp.toFixed(2)} nm</span> loodrecht op de startlijn${sh&&pn?'':' <small>(lijn haaks op de boei)</small>'} · koers <span class="gd-n">${mag(GF.crs)}M</span> vanaf de startlijn${gl?` · laylines <span class="sb">SB ${mag(gl.sb.hdg)}M</span> / <span class="bb">BB ${mag(gl.bb.hdg)}M</span> <small>(kruishoek ${Math.round(ba)}° bij ${ST.tws} kn)</small>`:''}`;
-  }catch(e){console.error('laylines',e)}
   {const dc=distCrs(S.start,S.gate,D.decl);if(document.activeElement!==$('sgDist'))$('sgDist').value=dc.nm.toFixed(2);if(document.activeElement!==$('sgCrs'))$('sgCrs').value=Math.round(dc.mw)%360;
    $('sgHint').textContent=`Start ${SG_SRC.start}, gate ${SG_SRC.gate}. Sleep de lichtblauwe cirkels op de kaart om ze te verplaatsen.`;$('sgReset').hidden=!ST.sgAdj[ST.area]}
   windInd();
@@ -434,6 +423,7 @@ function show(fit){
   try{renderFleet()}catch(e){}
   if(LV.baan!==ST.baan){LV.i=-1;LV.baan=ST.baan;NAV.leg=0}
   if(LV.i>=legs.length)LV.i=-1;if(NAV.leg>=legs.length)NAV.leg=0;
+  drawLaylines();
   markFocus();
   if(LV.i>=0){if(fit)fitLeg();else applyVB()}else{if(fit)fitTo(curBox);else applyVB()}
   try{gpsUpdate()}catch(e){}
@@ -492,6 +482,8 @@ function legProgress(l,xy){let best=null,acc=0;
   let rem=0;for(let j=best.j;j<l.p.length;j++){const a=j===best.j?best.q:l.p[j-1],b=l.p[j];rem+=Math.hypot(b[0]-a[0],b[1]-a[1])}
   return {...best,rem,next:l.p[best.j],xte:best.d}}
 function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
+  try{gpsUpdate0()}finally{if(LAYL_LEG!==NAV.leg){drawLaylines();try{applyVB()}catch(e){}}}}
+function gpsUpdate0(){
   let l=CUR.legs[NAV.leg];let pr=legProgress(l,G.xy);
   // aankomst: dicht bij het einde van het rak -> automatisch volgend rak
   let moved=false;
@@ -923,7 +915,7 @@ $('gpxBtn').onclick=makeGpx;
 let PREVSTYLE=null;
 function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
-  raceMode(t==='Race');if(t!=='Race')mapOnly(false);
+  raceMode(t==='Race');if(t!=='Race')mapOnly(false);try{drawLaylines()}catch(e){}
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
   if(t==='Race'){if(prev!=='Race'){PREVSTYLE=ST.mapStyle;if(ST.mapStyle!=='chart')setStyle('chart')}unlockAudio();const lp=$('legsPanel');lp.open=true;if(!G.on)gpsStart();rbSync();setTimeout(()=>{applyVB();markCurLeg(true)},30)}
   else if(t==='Kaart'){if(G.on)gpsStop();applyVB()}
@@ -933,6 +925,29 @@ function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Analyse','Deeln','Ui
   wakeLock(t==='Race')}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('gdBtn').onclick=()=>{const on=!document.body.classList.contains('gdon');document.body.classList.toggle('gdon',on);$('gdBtn').setAttribute('aria-pressed',on?'true':'false');if(on){G.follow=false;try{$('gFollow').setAttribute('aria-pressed','false')}catch(e){}}show(false);if(on&&CUR&&CUR.S)setTimeout(()=>{try{const a=CUR.S.start,g=CUR.S.gate,L=Math.max(0.6,Math.hypot(g[0]-a[0],g[1]-a[1])*1.3);fitTo({x:Math.min(a[0],g[0])-L*0.6,y:Math.min(a[1],g[1])-L*0.6,w:Math.abs(g[0]-a[0])+L*1.2,h:Math.abs(g[1]-a[1])+L*1.2},0.1);placeFree(g)}catch(e){}},30)};// inzoomen op start, boei en laylines
+
+/**
+ * Laylines uit de polar, alleen voor het rak waarin je nu zit (tab Race): kruisrak → laatste overstag-punt (kruishoek),
+ * voor-de-windse rak → laatste gijp-punt (gijphoek). Met de knop 'boei' altijd de laylines naar de bovenboei. Plus de maten van de bovenboei.
+ */
+let LAYL_LEG=-1;
+function drawLaylines(){if(!CUR)return;const g0=$('course');let lg=document.getElementById('laylG');if(!lg||!g0.contains(lg)){lg=el('g',{id:'laylG'},g0)}lg.innerHTML='';
+  try{const P=BOATS[ST.boat].polar,ba=beatAngle(P,ST.tws),ga=gybeAngle(P,ST.tws),mag=h=>pad3(Math.round(((h-D.decl)%360+360)%360)%360);
+   const S=CUR.S,legs=CUR.legs,race=document.body.classList.contains('race'),gd=document.body.classList.contains('gdon');
+   const gLen=Math.hypot(S.gate[0]-S.start[0],S.gate[1]-S.start[1])||0.5;
+   const draw=(m,ang,len,kind)=>{const L=laylines(m,ST.twd,ang,len);
+     for(const [k,o] of [['sb',L.sb],['bb',L.bb]]){el('line',{class:'layl '+k+' '+kind,x1:o.from[0],y1:o.from[1],x2:m[0],y2:m[1]},lg);
+       const t=el('text',{class:'lab laylab '+k},el('g',{class:'mk layk'},lg));t.dataset.x=o.from[0];t.dataset.y=o.from[1];t.textContent=`${k==='sb'?'SB':'BB'} ${mag(o.hdg)}${kind==='dn'?' gijp':''}`}
+     return L};
+   LAYL_LEG=NAV.leg;
+   if(race){const i=NAV.leg,l=legs[i];
+     if(l&&!(gd&&i===0)){const q=l.p[l.p.length-1],sg=l.s[l.s.length-1];const twa=sg?navTwaOf(ST.twd,sg.tw).a:null;const len=Math.max(0.5,Math.min(1.5,(i===0?gLen:l.nm)*1.3));
+       if(twa!=null&&twa<ba+8)draw(q,ba,len,'up');else if(twa!=null&&twa>ga-8)draw(q,ga,len,'dn')}
+     if(gd)draw(S.gate,ba,Math.max(0.6,gLen*1.3),'up')}
+   const gl=laylines(S.gate,ST.twd,ba,1);
+   const sh=pingXY('ship'),pn=pingXY('pin');const GF=gateFromLine(S.start,S.gate,sh&&pn?[pn,sh]:null);
+   $('gdInfo').innerHTML=`<b>Bovenboei</b> <span class="gd-n">${GF.perp.toFixed(2)} nm</span> loodrecht op de startlijn${sh&&pn?'':' <small>(lijn haaks op de boei)</small>'} · koers <span class="gd-n">${mag(GF.crs)}M</span> vanaf de startlijn · laylines <span class="sb">SB ${mag(gl.sb.hdg)}M</span> / <span class="bb">BB ${mag(gl.bb.hdg)}M</span> <small>(kruishoek ${Math.round(ba)}° bij ${ST.tws} kn)</small>`;
+  }catch(e){console.error('laylines',e)}}
 /** Zet punt xy op een plek van de kaart die niet onder een vak (GPS, rakken, knoppen) ligt. */
 function placeFree(xy){const r=svg.getBoundingClientRect();const k=Math.max(vb.w/r.width,vb.h/r.height);
   const C=[];for(let i=1;i<10;i++)for(let j=1;j<10;j++)C.push([i/10,j/10]);C.sort((a,b)=>Math.hypot(a[0]-.5,a[1]-.42)-Math.hypot(b[0]-.5,b[1]-.42));

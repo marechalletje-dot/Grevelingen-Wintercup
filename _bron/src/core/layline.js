@@ -7,6 +7,9 @@ const norm = a => ((a % 360) + 360) % 360;
 
 /** Optimale kruishoek (TWA) uit de polar bij windsnelheid tws. */
 export function beatAngle(polar, tws) { return interpTws(polar, polar.beatAng, tws); }
+/** Optimale gijphoek (TWA) uit de polar bij windsnelheid tws. */
+export function gybeAngle(polar, tws) { return interpTws(polar, polar.gybeAng, tws); }
+// laylines(): dezelfde formule werkt voor voor-de-wind met de gijphoek: stuurboordgijp TWD − hoek, bakboordgijp TWD + hoek.
 
 /**
  * Laylines naar een bovenwinds merkteken: de koersen waarmee je het merk aan de wind net haalt.

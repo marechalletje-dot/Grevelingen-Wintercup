@@ -18,3 +18,10 @@ test('bovenboei t.o.v. startlijn: met en zonder pings', () => {
   const h = gateFromLine([0, 0], [0.1, -0.5], [[-0.1, 0], [0.1, 0]]); near(h.perp, 0.5); near(h.dist, Math.hypot(0.1, 0.5));
 });
 test('kruishoek uit de polar', () => { const p = { tws: [6, 12], beatAng: [44, 40] }; near(beatAngle(p, 9), 42); });
+test('voor de wind: gijplaylines met de gijphoek', async () => {
+  const { gybeAngle } = await import('../src/core/layline.js');
+  near(gybeAngle({ tws: [6, 12], gybeAng: [150, 170] }, 9), 160);
+  // wind uit 270°, gijphoek 150°: stuurboordgijp koers 120°, bakboordgijp koers 060°; lijnen liggen bovenwinds (west) van het merk
+  const L = laylines([0, 0], 270, 150, 1); near(L.sb.hdg, 120); near(L.bb.hdg, 60);
+  assert.ok(L.sb.from[0] < 0 && L.bb.from[0] < 0);
+});
