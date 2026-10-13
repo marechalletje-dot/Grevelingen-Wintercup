@@ -2,7 +2,7 @@
 // de simulatie vóór de race en met de polar, met de actuele (achteraf) modelwind van de racedag op plaats en tijd.
 import { parseTrackFile, parseAisJson, aisUrl, vesselApiUrl, findNextToken, cleanTrack, addMotion, matchMarks, perfSeries, legStats, overall, packTrack, unpackTrack, distNm } from '../core/analysis.js';
 import { fieldUrl, parseField, fieldWind, fieldAt, sampleGrid } from '../core/wxfield.js';
-import { simulate, windAt } from '../core/wx.js';
+import { simulate } from '../core/wx.js';
 import { RACES } from '../data/results.js';
 import { wname } from '../core/nav.js';
 
@@ -81,13 +81,14 @@ export function initAnalysis(o) {
     const differs = m.baan && (+m.baan !== +cur.baan || (m.area && m.area !== cur.area) || (m.boat && m.boat !== cur.boat));
     $('paUseCourse').hidden = !differs; if (differs) $('paUseCourse').textContent = `Gebruik baan ${m.baan}${m.area ? ' / ' + m.area : ''}${m.boat && boats[m.boat] ? ' · ' + boats[m.boat].name : ''} van deze race`;
     A.meta = m;
+    { const c = getCtx(); $('paManBaan').value = (A.sim && A.sim.manual && A.sim.baan) || m.baan || cur.baan; $('paManTwd').value = A.sim && A.sim.manual ? A.sim.manual.twd : c.twd; $('paManTws').value = A.sim && A.sim.manual ? A.sim.manual.tws : c.tws; }
     // track
     if (A.trk && A.trk.pts && A.trk.pts.length >= 20) {
       const P = unpackTrack(A.trk.pts); const src = { app: 'opgenomen in de app', file: 'uit bestand' + (A.trk.name ? ' ' + A.trk.name : ''), ais: 'AIS (' + (A.trk.provider || 'API') + ')' }[A.trk.src] || A.trk.src;
       $('paTrk').innerHTML = `✓ Track ${esc(src)}: ${P.length} punten, ${hm(P[0].t)}–${hm(P[P.length - 1].t)}`;
       $('paDel').hidden = false;
     } else { $('paTrk').textContent = 'Nog geen track voor deze dag. Neem op in de tab Race, laad een GPX/CSV-bestand of haal AIS-data op.'; $('paDel').hidden = true; }
-    $('paSimInfo').textContent = A.sim ? `Simulatie vóór de race bewaard (${hm(A.sim.saved)} · baan ${A.sim.baan || '?'} · start ${hm(A.sim.start)} · finish ${hm(A.sim.finish)}).` : 'Geen simulatie vóór de race bewaard (wordt bewaard zodra je vóór de start de windverwachting ophaalt in Race preparation).';
+    $('paSimInfo').textContent = A.sim ? `Simulatie vooraf${A.sim.manual ? ` (achteraf gemaakt: ${String(A.sim.manual.twd).padStart(3, '0')}° ${A.sim.manual.tws} kn constant)` : ` bewaard ${hm(A.sim.saved)}`} · baan ${A.sim.baan || '?'} · start ${hm(A.sim.start)} · finish ${hm(A.sim.finish)}.` : 'Geen simulatie vóór de race bewaard (wordt bewaard zodra je vóór de start de windverwachting ophaalt in Race preparation).';
     $('paWxInfo').textContent = A.act ? `Actuele modelwind ${A.act.model.replace('_seamless', '').toUpperCase()} opgehaald ${new Date(A.act.fetched).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.` : 'Nog niet opgehaald.';
   }
   const startMs = () => { const [h, mi, s] = ($('paStart').value || '11:00:00').split(':').map(Number); const [y, m, d] = A.day.split('-').map(Number); return new Date(y, m - 1, d, h || 0, mi || 0, s || 0).getTime(); };
@@ -297,6 +298,23 @@ export function initAnalysis(o) {
   $('paAis').onclick = fetchAis;
   $('paWx').onclick = async () => { if (await fetchActual()) analyse(); };
   $('paRun').onclick = analyse;
+  function manualSim() {
+    const baan = Math.round(+$('paManBaan').value), twd = ((Math.round(+$('paManTwd').value) % 360) + 360) % 360, tws = +$('paManTws').value;
+    if (!(tws >= 2 && tws <= 35)) { $('paMsg').textContent = 'Vul een windsnelheid tussen 2 en 35 kn in.'; return; }
+    const run = () => {
+      const legs = getLegs(); if (!legs || !legs.length) { $('paMsg').textContent = 'Geen baan beschikbaar.'; return; }
+      const start = startMs(); const ctx = { ...getCtx(), polar: getPolar(getMeta().boat), twd, tws };
+      const series = [{ t: start - 6 * 3600e3, h: 0, twd, tws }, { t: start + 12 * 3600e3, h: 0, twd, tws }];
+      const sim = simulate(legs, ctx, series, start);
+      const M = getMeta();
+      LS.set(K_SIM + A.day, { day: A.day, saved: Date.now(), baan: M.baan, area: M.area, boat: M.boat, start: sim.start, finish: sim.finish, field: false, manual: { twd, tws },
+        legs: sim.legs.map(l => ({ to: l.to, start: l.start, end: l.end, twd: l.twd, tws: l.tws, twa: Math.round(l.twa), side: l.side, kn: +l.kn.toFixed(2) })) });
+      $('paMsg').textContent = `Simulatie vooraf gemaakt voor baan ${M.baan}: ${String(twd).padStart(3, '0')}° ${tws} kn, zeiltijd ${fmtH(sim.hours)}.`;
+      load(); analyse();
+    };
+    if (baan && baan !== +getMeta().baan) { setCourse({ ...getMeta(), baan }); setTimeout(run, 80); } else run();
+  }
+  $('paMan').onclick = manualSim;
   $('paDel').onclick = () => { if (!confirm(`Track van ${dlabel(A.day)} verwijderen van dit toestel?`)) return; LS.del(K_TRK + A.day); fillDays(); load(); $('paOut').hidden = true; };
   $('paUseCourse').onclick = () => { setCourse(A.meta); setTimeout(() => { load(); analyse(); }, 60); };
 

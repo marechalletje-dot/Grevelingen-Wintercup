@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl" data-build="f5085dc8">
+<html lang="nl" data-build="de6a572d">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#2f4060">
 <link rel="preload" href="data.55e8fe2b.json" as="fetch" crossorigin>
-<link rel="preload" href="app.ae8ae26c.js" as="script">
+<link rel="preload" href="app.492e9bfa.js" as="script">
 <title>Wintercup Banenkaart Grevelingen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -961,12 +961,21 @@ i.sw{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5
         <button type="button" id="paUseCourse" class="act alt" hidden></button>
         <div class="dl-grid"><label for="paStart">Start (jouw klasse)</label><input type="time" id="paStart" step="1"></div>
         <p id="paSimInfo" class="hint"></p>
+        <details class="pa-ais" id="paManBox"><summary>Simulatie vooraf alsnog maken</summary>
+          <div class="dl-grid">
+            <label for="paManBaan">Baan</label><input type="number" id="paManBaan" min="1" max="99" step="1">
+            <label for="paManTwd">Wind uit (TWD)</label><div><input type="number" id="paManTwd" min="0" max="359" step="1"> °</div>
+            <label for="paManTws">Windsnelheid (gem.)</label><div><input type="number" id="paManTws" min="2" max="35" step="1"> kn</div>
+          </div>
+          <button type="button" id="paMan" class="act alt">Maak simulatie vooraf</button>
+          <p class="hint">Constante wind over de hele race, met de polar, het rendement en de manoeuvreverliezen uit Race preparation. Dit vervangt een eventueel bewaarde simulatie voor deze dag.</p>
+        </details>
       </div>
       <div class="dl-card">
         <h2>GPS-track</h2>
         <p id="paTrk" class="pa-line"></p>
         <label class="act alt pa-file">GPX / CSV laden<input type="file" id="paFile" accept=".gpx,.csv,.txt,.json,application/gpx+xml,text/csv,application/json" hidden></label>
-        <details class="pa-ais"><summary>AIS ophalen (eigen API-sleutel)</summary>
+        <details class="pa-ais" id="paAisBox"><summary>AIS ophalen (eigen API-sleutel)</summary>
           <div class="dl-grid">
             <label for="paProv">Dienst</label><select id="paProv"><option value="vesselapi">VesselAPI (gratis laag, 31 dagen)</option><option value="proxy">VesselAPI via eigen proxy (Google Apps Script)</option><option value="datalastic">Datalastic (vessel_history)</option><option value="custom">Eigen dienst (URL-sjabloon)</option></select>
             <label for="paMmsi">MMSI</label><input id="paMmsi" inputmode="numeric" autocomplete="off" placeholder="9 cijfers">
@@ -1165,6 +1174,6 @@ var WC_BUILD=document.documentElement.getAttribute("data-build"),wcLast=0;
 function wcCheck(){if(location.protocol!=="https:")return;var n=Date.now();if(n-wcLast<60000)return;wcLast=n;fetch("index.html?u="+n,{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/data-build="([0-9a-f]+)"/);if(m&&m[1]!==WC_BUILD)wcBar()}).catch(function(){});if(navigator.serviceWorker)navigator.serviceWorker.getRegistration().then(function(g){g&&g.update()}).catch(function(){})}
 function wcBar(){if(document.getElementById("updBar"))return;var d=document.createElement("div");d.id="updBar";d.style.cssText="position:fixed;left:8px;right:8px;top:max(8px,env(safe-area-inset-top));z-index:2000;background:#2f4060;color:#fff;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;font:600 15px sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)";d.innerHTML="<span style=\"flex:1\">Nieuwe versie beschikbaar</span><button id=\"updGo\" style=\"border:0;border-radius:7px;padding:8px 14px;font:700 15px sans-serif;background:#fff;color:#2f4060\">Bijwerken</button><button id=\"updX\" style=\"border:0;background:none;color:#fff;font-size:20px\">×</button>";document.body.appendChild(d);document.getElementById("updX").onclick=function(){d.remove()};document.getElementById("updGo").onclick=function(){d.textContent="Bijwerken…";var done=function(){location.replace(location.pathname+"?v="+Date.now())};if(!window.caches)return done();caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!=="wintercup-tiles"&&k!=="wintercup-assets"}).map(function(k){return caches.delete(k)}))}).then(done,done)}}
 addEventListener("load",function(){setTimeout(wcCheck,2500)});document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")wcCheck()});
-fetch("data.55e8fe2b.json").then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){window.__D=j;var s=document.createElement("script");s.src="app.ae8ae26c.js";s.onload=function(){var m=document.getElementById("bootMsg");m&&m.remove()};s.onerror=bootFail;document.body.appendChild(s)}).catch(bootFail);</script>
+fetch("data.55e8fe2b.json").then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){window.__D=j;var s=document.createElement("script");s.src="app.492e9bfa.js";s.onload=function(){var m=document.getElementById("bootMsg");m&&m.remove()};s.onerror=bootFail;document.body.appendChild(s)}).catch(bootFail);</script>
 </body>
 </html>

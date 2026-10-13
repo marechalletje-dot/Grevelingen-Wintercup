@@ -943,12 +943,21 @@ i.sw{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5
         <button type="button" id="paUseCourse" class="act alt" hidden></button>
         <div class="dl-grid"><label for="paStart">Start (jouw klasse)</label><input type="time" id="paStart" step="1"></div>
         <p id="paSimInfo" class="hint"></p>
+        <details class="pa-ais" id="paManBox"><summary>Simulatie vooraf alsnog maken</summary>
+          <div class="dl-grid">
+            <label for="paManBaan">Baan</label><input type="number" id="paManBaan" min="1" max="99" step="1">
+            <label for="paManTwd">Wind uit (TWD)</label><div><input type="number" id="paManTwd" min="0" max="359" step="1"> °</div>
+            <label for="paManTws">Windsnelheid (gem.)</label><div><input type="number" id="paManTws" min="2" max="35" step="1"> kn</div>
+          </div>
+          <button type="button" id="paMan" class="act alt">Maak simulatie vooraf</button>
+          <p class="hint">Constante wind over de hele race, met de polar, het rendement en de manoeuvreverliezen uit Race preparation. Dit vervangt een eventueel bewaarde simulatie voor deze dag.</p>
+        </details>
       </div>
       <div class="dl-card">
         <h2>GPS-track</h2>
         <p id="paTrk" class="pa-line"></p>
         <label class="act alt pa-file">GPX / CSV laden<input type="file" id="paFile" accept=".gpx,.csv,.txt,.json,application/gpx+xml,text/csv,application/json" hidden></label>
-        <details class="pa-ais"><summary>AIS ophalen (eigen API-sleutel)</summary>
+        <details class="pa-ais" id="paAisBox"><summary>AIS ophalen (eigen API-sleutel)</summary>
           <div class="dl-grid">
             <label for="paProv">Dienst</label><select id="paProv"><option value="vesselapi">VesselAPI (gratis laag, 31 dagen)</option><option value="proxy">VesselAPI via eigen proxy (Google Apps Script)</option><option value="datalastic">Datalastic (vessel_history)</option><option value="custom">Eigen dienst (URL-sjabloon)</option></select>
             <label for="paMmsi">MMSI</label><input id="paMmsi" inputmode="numeric" autocomplete="off" placeholder="9 cijfers">

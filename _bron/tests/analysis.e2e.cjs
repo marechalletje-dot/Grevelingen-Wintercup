@@ -40,6 +40,12 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
     const sum = await p.textContent('#paSum'); ok(/Zeiltijd werkelijk\d:\d\d:\d\d/.test(sum) && /\d+%/.test(sum), `${nm}: samenvatting (${sum.replace(/\s+/g, ' ').slice(0, 120)})`);
     const miss = await p.textContent('#paMsg'); ok(!/niet duidelijk gerond/.test(miss), `${nm}: alle merktekens gerond ${miss}`);
     ok(await p.locator('#paMap polyline.pa-trk').count() > 0 && await p.locator('#paChSpd path.ln').count() === 2, `${nm}: kaart en grafieken`);
+    // simulatie vooraf alsnog maken (constante wind)
+    await p.evaluate(() => { document.getElementById('paManBox').open = true; });
+    await p.fill('#paManTwd', '290'); await p.fill('#paManTws', '18'); await p.click('#paMan'); await p.waitForTimeout(800);
+    const sum2 = (await p.textContent('#paSum')).replace(/\s+/g, ' ');
+    ok(/Simulatie vooraf\s*\d:\d\d:\d\d/.test(sum2) && /achteraf gemaakt: 290° 18 kn/.test(await p.textContent('#paSimInfo')), `${nm}: simulatie vooraf achteraf gemaakt (${sum2.slice(0, 140)})`);
+    ok(!/–/.test(await p.locator('#paLegs tr').first().locator('td').nth(3).textContent()), `${nm}: kolom sim vooraf gevuld`);
     // track opgeslagen en na herladen terug
     await p.reload(); await p.waitForSelector('#lpBody tr', { state: 'attached' }); await p.waitForTimeout(800);
     ok(await p.isVisible('#tabAnalyse') && /✓ Track/.test(await p.textContent('#paTrk')), `${nm}: track bewaard na herladen`);
@@ -50,7 +56,7 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
         const base = new Date(2026, 9, 12, 11, 0, 0).getTime() + (second ? 1500e3 : 0);
         const v = [...Array(50).keys()].map(k => ({ mmsi: 244001631, latitude: 51.74 + k * 0.0004, longitude: 3.92 + (second ? 0.02 : 0) + k * 0.0003, timestamp: new Date(base + k * 30e3).toISOString(), sog: 5 }));
         r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ vessels: v, nextToken: second ? null : 'p2' }) }); });
-      await p.selectOption('#paDay', '2026-10-11'); await p.evaluate(() => { document.querySelector('.pa-ais').open = true; });
+      await p.selectOption('#paDay', '2026-10-11'); await p.evaluate(() => { document.getElementById('paAisBox').open = true; });
       await p.fill('#paKey', 'testsleutel'); await p.dispatchEvent('#paKey', 'change');
       await p.click('#paAis'); await p.waitForTimeout(1200);
       ok(calls === 2 && auth === 'Bearer testsleutel', `${nm}: VesselAPI 2 pagina's met sleutel in header (${calls}, ${auth})`);
