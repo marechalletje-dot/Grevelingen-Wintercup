@@ -13,7 +13,7 @@ const dlabel = s => { const [y, m, d] = s.split('-').map(Number); const D = new 
 const arrow = twd => `<span class="wxarr" style="transform:rotate(${twd}deg)" aria-hidden="true">↓</span>`;
 const fmtH = h => { const s = Math.round(h * 3600); return `${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
 
-export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange = () => {}, getFieldFn = () => null, onField = () => {} }) {
+export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange = () => {}, getFieldFn = () => null, onField = () => {}, onSim = () => {} }) {
   const $ = id => document.getElementById(id);
   if (!$('wxGet')) return { series: () => null, demoWind: () => null };
   let WX = store.state.wxData && store.state.wxData.series ? store.state.wxData : null;
@@ -61,7 +61,7 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
     const start = getStart(WX.day); const legs = getLegs();
     let end = start + 3 * 3600e3;
     const FF = getFieldFn(WX.day);
-    if (legs && legs.length) { SIM = simulate(legs, getCtx(), WX.series, start, FF); SIM.field = !!FF; end = SIM.finish; }
+    if (legs && legs.length) { SIM = simulate(legs, getCtx(), WX.series, start, FF); SIM.field = !!FF; end = SIM.finish; try { onSim(WX.day, SIM); } catch (e) {} }
     const A = avgWind(WX.series, start, end);
     $('wxInfo').innerHTML = `${esc(MODELS[WX.model] || WX.model)} · opgehaald ${new Date(WX.fetched).toLocaleString('nl-NL', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`;
     const rows = WX.series.filter(s => s.h >= 9 && s.h <= 17);

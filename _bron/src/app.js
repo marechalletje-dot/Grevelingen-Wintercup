@@ -15,6 +15,7 @@ import { initRegels } from './ui/regels.js';
 import { initUitslagen } from './ui/uitslagen.js';
 import { initWx } from './ui/wx.js';
 import { initWxField } from './ui/wxfield.js';
+import { initAnalysis, recordFix, savePreSim } from './ui/analysis.js';
 import { slotTimes } from './core/startseq.js';
 
 const D=window.__D;
@@ -618,6 +619,7 @@ function gpsFix(p){const c=p.coords;const xy=llXY(c.latitude,c.longitude);const 
     const a=G.xy,b=xy;if(sd(a)!==sd(b)&&sd(a)!==0){const den=(b[0]-a[0])*dy-(b[1]-a[1])*dx;const t=den?((sh[0]-a[0])*dy-(sh[1]-a[1])*dx)/den:0;const u=((a[0]+(b[0]-a[0])*t-sh[0])*dx+(a[1]+(b[1]-a[1])*t-sh[1])*dy)/(dx*dx+dy*dy);
       if(u>-0.2&&u<1.2){G.started=true;$('gMsg').style.color='var(--ink)';$('gMsg').textContent='Start! ✓ Startlijn gepasseerd.';G.msgHold=Date.now()+15000}}}}
   G.xy=xy;G.acc=c.accuracy;
+  if(!G.demo&&ST.tab==='Race'){try{recordFix(now,c.latitude,c.longitude,{baan:ST.baan,area:ST.area,boat:ST.boat,start:RACE.start||null})}catch(e){}}
   G.sog=c.speed!=null&&!isNaN(c.speed)?c.speed*1.943844:(G.sogCalc??null);
   G.cog=c.heading!=null&&!isNaN(c.heading)&&G.sog>0.5?c.heading:(G.sog==null||G.sog>0.5?(G.cogCalc??null):null);
   const last=G.trail[G.trail.length-1];if(!last||Math.hypot(xy[0]-last[0],xy[1]-last[1])*1852>8){G.trail.push(xy);if(G.trail.length>3000)G.trail.shift()}
@@ -892,13 +894,14 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
   if(t==='Race'){if(prev!=='Race'){PREVSTYLE=ST.mapStyle;if(ST.mapStyle!=='chart')setStyle('chart')}unlockAudio();const lp=$('legsPanel');lp.open=true;if(!G.on)gpsStart();rbSync();setTimeout(()=>{applyVB();markCurLeg(true)},30)}
   else if(t==='Kaart'){if(G.on)gpsStop();applyVB()}
   else if(t==='Deeln')renderFleet()
+  else if(t==='Analyse'){if(G.on)gpsStop();setTimeout(()=>{try{PRA.render()}catch(e){console.error('analyse',e)}},0)}
   else{if(G.on)gpsStop()}
   wakeLock(t==='Race')}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -969,13 +972,18 @@ var WF;try{WF=initWxField({store,svg,llXY,xyLL,getK:()=>K,getDay:()=>($('wxDay')
   getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   isWater:(x,y)=>{const w=$('water');try{return w.isPointInFill(new DOMPoint(x,y))}catch(e){try{const q=svg.createSVGPoint();q.x=x;q.y=y;return w.isPointInFill(q)}catch(e2){return true}}}})}
 catch(e){console.error('windveld',e);WF={setData(){},has:()=>false,windFn:()=>null,setTime(){},setFetcher(){},redraw(){}}}// windveld mag de kaart nooit blokkeren
-var WXU=initWx({store,getFieldFn:d=>WF.windFn(d),onField:d=>WF.setData(d),getLegs:()=>CUR&&CUR.legs,getCtx:calcCtx,
+var WXU=initWx({store,getFieldFn:d=>WF.windFn(d),onField:d=>WF.setData(d),onSim:(day,sim)=>{try{savePreSim(day,sim,{baan:ST.baan,area:ST.area,boat:ST.boat})}catch(e){}},getLegs:()=>CUR&&CUR.legs,getCtx:calcCtx,
   getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   applyWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}});
 store.on(['wfOn','wfData'],()=>setTimeout(()=>{if(document.body.classList.contains('maponly')){try{if(LV.i>=0)fitLeg();else fitTo(curBox)}catch(e){}}},60));
 try{WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});}catch(e){console.error('windveld',e)}
 store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
 
+window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));// voor tests
+var PRA=initAnalysis({store,llXY,xyLL,boats:BOATS,getLegs:()=>CUR&&CUR.legs,getMeta:()=>({baan:ST.baan,area:ST.area,boat:ST.boat}),
+  getPolar:b=>(BOATS[b]||BOATS[ST.boat]).polar,getCtx:calcCtx,waterD:()=>$('water').getAttribute('d'),
+  slotStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
+  setCourse:m=>{if(m.boat&&BOATS[m.boat]&&m.boat!==ST.boat){$('boatSel').value=m.boat;$('boatSel').onchange({target:$('boatSel')})}if(m.area&&'ABCD'.includes(m.area))ST.area=m.area;if(m.baan&&D.courses[m.baan])ST.baan=+m.baan;show(true)}});
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
