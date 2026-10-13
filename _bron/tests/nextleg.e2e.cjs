@@ -21,6 +21,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); 
     // racemodus + proefvaart 60x: melding volgend rak
     await p.click('#tbRace'); await p.waitForTimeout(400);
     ok(await p.isVisible('#windInd'), `${nm}: windpijl zichtbaar in racemodus`);
+    await p.evaluate(() => { document.getElementById('spiPop').hidden = true; });  // eventuele spi-melding (midden op de kaart) eerst sluiten
     await p.selectOption('#gDemoSpd', '60'); await p.click('#gDemo');
     await p.waitForSelector('#nxtPop:not([hidden])', { timeout: 60000 }).catch(() => {});
     const vis = await p.isVisible('#nxtPop'); ok(vis, `${nm}: pop-up volgend rak verschenen`);

@@ -66,7 +66,9 @@ export function initWxField({ store, svg, llXY, xyLL, getK, getDay, getStart, is
       if (n % 2 === 0) { const tg = el('g', { class: 'wfn', 'data-x': x, 'data-y': y, 'data-a': 0, 'data-s': 1, transform: `translate(${x},${y}) scale(${k})` }, arr); const t = el('text', { x: 9, y: 4 }, tg); t.textContent = Math.round(w.tws); }
     });
   }
-  function render() {
+  // fout in het windveld mag de rest van de app (kaart, verwachting) nooit stoppen
+  function render() { try { renderInner(); } catch (e) { console.error('windveld', e); L.style.display = 'none'; stopAnim(); } }
+  function renderInner() {
     const on = !!store.state.wfOn;
     $('wfBtn').setAttribute('aria-pressed', on ? 'true' : 'false'); $('wfBar').hidden = !on;
     document.getElementById('chart').classList.toggle('wf-on', on);

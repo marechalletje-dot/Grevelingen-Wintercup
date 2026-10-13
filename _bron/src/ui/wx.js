@@ -65,7 +65,7 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
     const A = avgWind(WX.series, start, end);
     $('wxInfo').innerHTML = `${esc(MODELS[WX.model] || WX.model)} · opgehaald ${new Date(WX.fetched).toLocaleString('nl-NL', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`;
     const rows = WX.series.filter(s => s.h >= 9 && s.h <= 17);
-    $('wxBody').innerHTML = rows.map(s => { const inRace = s.t > start - 3600e3 && s.t <= end; return `<tr class="${inRace ? 'race' : ''}"><td>${pad(s.h)}:00</td><td>${arrow(s.twd)} ${String(s.twd).padStart(3, '0')}° <small>${wname(s.twd)}</small></td><td class="num">${Math.round(s.tws)}</td><td class="num">${s.gust != null ? Math.round(s.gust) : '–'}</td></tr>`; }).join('');
+    $('wxBody').innerHTML = rows.map(s => { const inRace = s.t > start - 3600e3 && s.t <= end; return `<tr class="${inRace ? 'race' : ''}"><td class="m">${pad(s.h)}:00</td><td class="wd">${arrow(s.twd)}<span class="m">${String(s.twd).padStart(3, '0')}°</span> <small>${wname(s.twd)}</small></td><td class="num"><b>${Math.round(s.tws)}</b></td><td class="num">${s.gust != null ? Math.round(s.gust) : '–'}</td></tr>`; }).join('');
     $('wxAvg').innerHTML = `Tijdens de race (${hm(start)}–${hm(end)}): <b>${String(A.twd).padStart(3, '0')}° ${wname(A.twd)}, ${A.tws.toFixed(0)} kn</b> (${Math.round(A.min)}–${Math.round(A.max)} kn)`;
     $('wxUse').onclick = () => { applyWind(Math.round(A.twd / 5) * 5 % 360, Math.max(4, Math.min(24, Math.round(A.tws)))); render(); };
     onChange();
@@ -74,7 +74,7 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
     if (!SIM) return;
     $('wxSimBox').hidden = false;
     $('wxSimHead').textContent = `Start ${hm(SIM.start)} · finish ${hm(SIM.finish)} · zeiltijd ${fmtH(SIM.hours)}${SIM.field ? ' · wind per rak uit het windveld' : ''}`;
-    $('wxSimBody').innerHTML = SIM.legs.map((l, i) => `<tr><td>${i + 1}</td><td>${esc(l.to)}</td><td class="num">${hm(l.start)}</td><td>${String(l.twd).padStart(3, '0')}° ${Math.round(l.tws)} kn</td><td class="num">${Math.round(l.twa)}° ${l.side}</td><td class="num">${l.kn.toFixed(1)}</td><td class="num">${fmtH((l.end - l.start) / 3600e3)}</td></tr>`).join('');
+    $('wxSimBody').innerHTML = SIM.legs.map((l, i) => `<tr><td class="num no">${i + 1}</td><td class="to">${esc(l.to)}</td><td class="num">${hm(l.start)}<small>${fmtH((l.end - l.start) / 3600e3)}</small></td><td class="num">${String(l.twd).padStart(3, '0')}°<small>${Math.round(l.tws)} kn</small></td><td class="num">${Math.round(l.twa)}°<small><span class="sd ${String(l.side).toLowerCase()}">${l.side}</span></small></td><td class="num"><b>${l.kn.toFixed(1)}</b></td></tr>`).join('');
   }
   $('wxGet').onclick = fetchWx;
   $('wxDay').onchange = () => { store.set({ wxDay: day() }); render(); };

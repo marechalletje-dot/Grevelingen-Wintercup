@@ -433,7 +433,7 @@ function markFocus(){
   $('legInfo').hidden=false;
 }
 function setLeg(i,refit=true){if(!CUR)return;const n=CUR.legs.length;const was=LV.i;LV.i=i<0?-1:Math.min(n-1,i);
-  if(window.innerWidth>=760){const lp=$('legsPanel');if(was<0&&LV.i>=0){LV.panel=lp.open;lp.open=false}else if(was>=0&&LV.i<0&&LV.panel!=null){lp.open=LV.panel;LV.panel=null}}if(LV.i>=0&&G.on){NAV.leg=LV.i;gpsUpdate()}markFocus();if(refit){if(LV.i>=0)fitLeg();else fitTo(curBox)}}
+  if(window.innerWidth>=760&&ST.tab==='Race'){const lp=$('legsPanel');if(was<0&&LV.i>=0){LV.panel=lp.open;lp.open=false}else if(was>=0&&LV.i<0&&LV.panel!=null){lp.open=LV.panel;LV.panel=null}}if(LV.i>=0&&G.on){NAV.leg=LV.i;gpsUpdate()}markFocus();if(refit){if(LV.i>=0)fitLeg();else fitTo(curBox)}}
 $('lnPrev').onclick=()=>setLeg(LV.i<0?0:Math.max(0,LV.i-1));
 $('lnNext').onclick=()=>setLeg(LV.i<0?0:LV.i+1);
 $('lnLab').onclick=()=>setLeg(LV.i<0?(G.on?NAV.leg:0):-1);
@@ -642,7 +642,7 @@ function gpsStart(){setTimeout(showResult,0);if(RACE.start&&Date.now()<RACE.star
   G.watch=navigator.geolocation.watchPosition(gpsFix,gpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});wake()}
 function gpsStop(keepMsg){if(ST.tab==='Race'&&!keepMsg){G.on=false;setTimeout(()=>setTab('Kaart'),0)}if(G.demo)demoStop();$('spiPop').hidden=true;G.spiDone=null;G.nxDone=null;hudPanel(false);if(G.watch!=null)navigator.geolocation.clearWatch(G.watch);G.watch=null;G.on=false;
   $('gpsBtn').setAttribute('aria-pressed','false');if(!keepMsg){$('gpsHud').hidden=true}$('gpsL').style.display='none';try{G.wake&&G.wake.release()}catch(e){}G.wake=null}
-function hudPanel(on){if(window.innerWidth<760||ST.tab==='Race')return;const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
+function hudPanel(on){return;/* v41: rakkentabel staat in de tab Banenkaart onder de kaart en hoeft niet meer dicht voor het GPS-vak */const lp=$('legsPanel');if(on){if(G.panel==null){G.panel=lp.open;lp.open=false}}else if(G.panel!=null){lp.open=G.panel;G.panel=null}}
 // proefvaart: virtuele boot vaart de huidige baan af (6 kn, 20x versneld)
 function demoSpd(){return ST.demoSpd}
 function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.nxDone=null;G.started=null;if(G.watch!=null){navigator.geolocation.clearWatch(G.watch);G.watch=null}
@@ -965,14 +965,15 @@ $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlM
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
 initUitslagen({store});
-var WF=initWxField({store,svg,llXY,xyLL,getK:()=>K,getDay:()=>($('wxDay')&&$('wxDay').value)||'',
+var WF;try{WF=initWxField({store,svg,llXY,xyLL,getK:()=>K,getDay:()=>($('wxDay')&&$('wxDay').value)||'',
   getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
-  isWater:(x,y)=>{try{return $('water').isPointInFill(new DOMPoint(x,y))}catch(e){return true}}});
+  isWater:(x,y)=>{const w=$('water');try{return w.isPointInFill(new DOMPoint(x,y))}catch(e){try{const q=svg.createSVGPoint();q.x=x;q.y=y;return w.isPointInFill(q)}catch(e2){return true}}}})}
+catch(e){console.error('windveld',e);WF={setData(){},has:()=>false,windFn:()=>null,setTime(){},setFetcher(){},redraw(){}}}// windveld mag de kaart nooit blokkeren
 var WXU=initWx({store,getFieldFn:d=>WF.windFn(d),onField:d=>WF.setData(d),getLegs:()=>CUR&&CUR.legs,getCtx:calcCtx,
   getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   applyWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}});
 store.on(['wfOn','wfData'],()=>setTimeout(()=>{if(document.body.classList.contains('maponly')){try{if(LV.i>=0)fitLeg();else fitTo(curBox)}catch(e){}}},60));
-WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});
+try{WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});}catch(e){console.error('windveld',e)}
 store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
 
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});

@@ -48,7 +48,10 @@ export function initPanels({ store, onResize = () => {} }) {
 
   for (const cfg of PANELS) {
     let el = document.querySelector(cfg.sel); if (!el) continue;
-    if (cfg.wrap) { const w = document.createElement('div'); w.className = 'chartwrap'; w.id = 'chartWrap'; el.parentElement.insertBefore(w, el); w.appendChild(el); el = w; }
+    let inner = el;
+    if (cfg.wrap) { const w = document.createElement('div'); w.className = 'chartwrap'; w.id = 'chartWrap'; el.parentElement.insertBefore(w, el); w.appendChild(el);
+      const lp = document.getElementById('legsPanel'); if (lp) w.appendChild(lp);   // v41: rakkentabel onder de kaart, beweegt mee met de kaart
+      el = w; }
     els[cfg.id] = el; el.classList.add('pnl'); el.dataset.pid = cfg.id;
     const isDet = el.tagName === 'DETAILS';
     let bar;
@@ -60,7 +63,7 @@ export function initPanels({ store, onResize = () => {} }) {
     if (!cfg.noCollapse && !isDet) btns.innerHTML += `<button type="button" class="pcolb" title="Open / dicht" aria-label="${cfg.title} open of dicht">▾</button>`;
     btns.innerHTML += `<button type="button" class="pmaxb" title="Schermvullend" aria-label="${cfg.title} schermvullend">⤢</button>`;
     bar.appendChild(btns);
-    const grip = document.createElement('div'); grip.className = 'pgrip'; grip.title = 'Sleep om groter of kleiner te maken (dubbelklik = standaard)'; el.appendChild(grip);
+    const grip = document.createElement('div'); grip.className = 'pgrip'; grip.title = 'Sleep om groter of kleiner te maken (dubbelklik = standaard)'; (cfg.chart ? inner : el).appendChild(grip);   // kaart: hoekje rechtsonder in de kaart zelf
     if (cfg.keep) { const k = el.querySelector(cfg.keep); k && k.classList.add('pkeep'); }
     // knoppen in een <summary> mogen het paneel niet open/dicht klappen
     for (const n of [hand, btns, grip]) { n.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); }); }
@@ -105,7 +108,7 @@ export function initPanels({ store, onResize = () => {} }) {
       const def = c === rail && m === 'm' && !isRace() ? MOBILE_ORDER : DEF[g];
       setOrder(c, lay.o[g] || def);
     }
-    if (main) main.style.setProperty('--railw', m === 'd' && lay.railw ? lay.railw + 'px' : '');
+    if (main) (main.parentElement || main).style.setProperty('--railw', m === 'd' && lay.railw ? lay.railw + 'px' : '');
     const map = document.getElementById('map'); if (map) map.style.height = lay.mapH ? lay.mapH + 'px' : '';
     for (const cfg of PANELS) {
       const el = els[cfg.id]; if (!el) continue; const p = lay.p[cfg.id] || {};
@@ -175,7 +178,7 @@ export function initPanels({ store, onResize = () => {} }) {
       const dw = ev.clientX - x0, dh = ev.clientY - y0;
       if (cfg.chart) { const h = Math.max(220, Math.round(mh0 + dh)); map.style.height = h + 'px'; res = { mapH: h }; return; }
       const h = Math.max(40, Math.round(r.height + dh)); el.style.height = h + 'px'; el.classList.add('psized'); res = { h };
-      if (inRail) { const w = Math.max(220, Math.min(620, Math.round(rw0 + dw))); main.style.setProperty('--railw', w + 'px'); res.railw = w; }
+      if (inRail) { const w = Math.max(220, Math.min(620, Math.round(rw0 + dw))); (main.parentElement || main).style.setProperty('--railw', w + 'px'); res.railw = w; }
       else if (abs) { const w = Math.max(160, Math.round(r.width + dw)); el.style.width = w + 'px'; res.w = w; }
     };
     const up = () => { g.removeEventListener('pointermove', mv); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up);

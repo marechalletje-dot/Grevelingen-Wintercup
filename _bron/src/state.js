@@ -43,7 +43,7 @@ export const SCHEMA = {
   spiAnn:  { def: true, key: 'wc_spiann', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   spiOpen: { def: true, key: 'wc_spiopen', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   view:    { def: '', key: 'wc_view', fix: v => (['', 'map', 'legs'].includes(v) ? v : undefined) },
-  layout:  { def: {}, key: 'wc_layout', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
+  layout:  { def: {}, key: 'wc_layout41', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);
 

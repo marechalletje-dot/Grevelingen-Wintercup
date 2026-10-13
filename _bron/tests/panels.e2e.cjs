@@ -26,16 +26,16 @@ const order = (p, sel) => p.evaluate(s => [...document.querySelector(s).children
     ok((await order(p, '.rail')).startsWith('info,'), 'info naar boven gesleept: ' + await order(p, '.rail'));
     // grootte kaart
     const h0 = (await p.locator('#map').boundingBox()).height;
-    await drag(p, '#chartWrap > .pgrip', async () => { const g = await p.locator('#chartWrap > .pgrip').boundingBox(); return { x: g.x + 5, y: g.y + 150 }; });
+    await drag(p, '#chart > .pgrip', async () => { const g = await p.locator('#chart > .pgrip').boundingBox(); return { x: g.x + 5, y: g.y + 150 }; });
     const h1 = (await p.locator('#map').boundingBox()).height; ok(h1 > h0 + 100, `kaart hoger: ${Math.round(h0)} -> ${Math.round(h1)}`);
     // zijbalk breder
     const rw0 = (await p.locator('.rail').boundingBox()).width;
     await drag(p, '[data-pid="gebied"] > .pgrip', async () => { const rg = await p.locator('[data-pid="gebied"] > .pgrip').boundingBox(); return { x: rg.x + 120, y: rg.y + 10 }; });
     const rw1 = (await p.locator('.rail').boundingBox()).width; ok(rw1 > rw0 + 80, `zijbalk breder: ${Math.round(rw0)} -> ${Math.round(rw1)}`);
-    // zwevend rakkenpaneel verplaatsen
-    await p.locator('#chart').scrollIntoViewIfNeeded(); const lp0 = await p.locator('#legsPanel').boundingBox();
-    await drag(p, '#legsPanel .phand', async () => { const ch = await p.locator('#chart').boundingBox(); return { x: ch.x + 120, y: ch.y + 120 }; });
-    const lp1 = await p.locator('#legsPanel').boundingBox(); ok(Math.abs(lp1.x - lp0.x) > 100, `rakkenpaneel verplaatst: x ${Math.round(lp0.x)} -> ${Math.round(lp1.x)}`);
+    // v41: rakkenpaneel onder de kaart, even breed als de kaart
+    { const ch = await p.locator('#chart').boundingBox(), lp = await p.locator('#legsPanel').boundingBox();
+      ok(lp.y >= ch.y + ch.height - 1 && Math.abs(lp.x - ch.x) < 2 && Math.abs(lp.width - ch.width) < 2, `rakkenpaneel onder de kaart en uitgelijnd (kaart ${Math.round(ch.x)}/${Math.round(ch.width)} · paneel ${Math.round(lp.x)}/${Math.round(lp.width)})`);
+      const lg = await p.locator('[data-pid="rakken"]').boundingBox(); ok(Math.abs(lg.x - ch.x) < 2, `rakkentabel uitgelijnd met kaart (${Math.round(lg.x)} / ${Math.round(ch.x)})`); }
     // schermvullend
     await p.click('[data-pid="rakken"] .pmaxb'); const mx = await p.locator('[data-pid="rakken"]').boundingBox();
     ok(mx.width > 1300 && mx.height > 800, 'rakkentabel schermvullend'); await p.keyboard.press('Escape');
@@ -46,7 +46,6 @@ const order = (p, sel) => p.evaluate(s => [...document.querySelector(s).children
     await p.reload(); await p.waitForSelector('#lpBody tr'); await p.waitForTimeout(300);
     ok(!(await p.isVisible('#chips')), 'dichtgeklapt bewaard'); ok((await order(p, '.rail')).startsWith('info,'), 'volgorde bewaard');
     ok(Math.abs((await p.locator('#map').boundingBox()).height - h1) < 3, 'kaarthoogte bewaard');
-    ok(Math.abs((await p.locator('#legsPanel').boundingBox()).x - lp1.x) < 3, 'positie rakkenpaneel bewaard');
     // deelnemers en uitleg
     await p.click('#tbDeeln'); await p.waitForTimeout(200);
     await drag(p, '[data-pid="dladd"] .phand', async () => { const t = await p.locator('[data-pid="dltabel"]').boundingBox(); return { x: t.x + 50, y: Math.max(2, t.y + 3) }; }, 30);
