@@ -44,6 +44,18 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
     await p.reload(); await p.waitForSelector('#lpBody tr', { state: 'attached' }); await p.waitForTimeout(800);
     ok(await p.isVisible('#tabAnalyse') && /✓ Track/.test(await p.textContent('#paTrk')), `${nm}: track bewaard na herladen`);
     ok(await p.inputValue('#paMmsi') === '244001631', `${nm}: MMSI Dream Machine ingevuld`);
+    if (nm === 'desktop') {  // AIS via VesselAPI (nagebootst): sleutel in header, twee pagina's
+      let auth = '', calls = 0;
+      await ctx.route(/api\.vesselapi\.com/, r => { calls++; auth = r.request().headers()['authorization'] || ''; const u = new URL(r.request().url()); const second = u.searchParams.get('pagination.nextToken') === 'p2';
+        const base = new Date(2026, 9, 12, 11, 0, 0).getTime() + (second ? 1500e3 : 0);
+        const v = [...Array(50).keys()].map(k => ({ mmsi: 244001631, latitude: 51.74 + k * 0.0004, longitude: 3.92 + (second ? 0.02 : 0) + k * 0.0003, timestamp: new Date(base + k * 30e3).toISOString(), sog: 5 }));
+        r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ vessels: v, nextToken: second ? null : 'p2' }) }); });
+      await p.selectOption('#paDay', '2026-10-11'); await p.evaluate(() => { document.querySelector('.pa-ais').open = true; });
+      await p.fill('#paKey', 'testsleutel'); await p.dispatchEvent('#paKey', 'change');
+      await p.click('#paAis'); await p.waitForTimeout(1200);
+      ok(calls === 2 && auth === 'Bearer testsleutel', `${nm}: VesselAPI 2 pagina's met sleutel in header (${calls}, ${auth})`);
+      ok(await p.inputValue('#paDay') === '2026-10-12' && /AIS \(VesselAPI\): 9\d punten/.test(await p.textContent('#paTrk')), `${nm}: AIS-track opgeslagen (${await p.textContent('#paTrk')})`);
+    }
     ok(errs.length === 0, `${nm}: geen JS-fouten ${errs.join(';')}`);
     await p.screenshot({ path: `/tmp/pa_${nm}.png`, fullPage: true });
     await ctx.close();

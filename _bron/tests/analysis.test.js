@@ -58,3 +58,9 @@ test('track compact opslaan', () => {
   const p = cleanTrack(synth()).slice(0, 5); const u = unpackTrack(packTrack(p));
   assert.equal(u.length, 5); assert.ok(distNm([u[4].lat, u[4].lon], [p[4].lat, p[4].lon]) < 0.001); assert.equal(u[4].t, p[4].t);
 });
+test('VesselAPI-URL en paginering', async () => {
+  const { vesselApiUrl, findNextToken } = await import('../src/core/analysis.js');
+  const u = vesselApiUrl('244001631', '2026-10-11'); assert.match(u, /^https:\/\/api\.vesselapi\.com\/v1\/vessels\/positions\?filter\.ids=244001631&filter\.idType=mmsi&time\.from=2026-10-11T\d\d%3A00%3A00Z/);
+  assert.match(vesselApiUrl('1', '2026-10-11', 'abc'), /pagination\.nextToken=abc/);
+  assert.equal(findNextToken({ vessels: [], pagination: { nextToken: 'x1' } }), 'x1'); assert.equal(findNextToken({ vessels: [] }), null);
+});

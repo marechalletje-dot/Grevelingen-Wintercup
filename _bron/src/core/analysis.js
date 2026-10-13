@@ -83,6 +83,20 @@ export function parseTrackFile(text, name = '') {
 }
 
 /** URL voor AIS-historie. provider 'datalastic' of een eigen sjabloon met {mmsi} {from} {to} {key} {day}. */
+/** VesselAPI (vrije laag): positie-historie per MMSI, sleutel in de header, max. 50 per pagina. */
+export function vesselApiUrl(mmsi, day, next = null) {
+  const [y, m, d] = day.split('-').map(Number);
+  const from = new Date(y, m - 1, d, 6, 0).toISOString().replace(/\.\d{3}Z$/, 'Z'), to = new Date(y, m - 1, d, 20, 0).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const p = new URLSearchParams({ 'filter.ids': mmsi, 'filter.idType': 'mmsi', 'time.from': from, 'time.to': to, 'pagination.limit': '50' });
+  if (next) p.set('pagination.nextToken', next);
+  return 'https://api.vesselapi.com/v1/vessels/positions?' + p.toString();
+}
+/** Volgende-pagina-token ergens in het antwoord. */
+export function findNextToken(j) {
+  let tok = null;
+  (function walk(v, d) { if (!v || tok || d > 4 || typeof v !== 'object') return; for (const k of Object.keys(v)) { if (/^next_?token$/i.test(k) && v[k]) { tok = v[k]; return; } walk(v[k], d + 1); } })(j, 0);
+  return tok;
+}
 export function aisUrl({ provider, mmsi, key, tpl }, day) {
   const nxt = (() => { const [y, m, d] = day.split('-').map(Number); const D = new Date(Date.UTC(y, m - 1, d + 1)); return D.toISOString().slice(0, 10); })();
   if (provider === 'custom') return String(tpl || '').replace(/\{mmsi\}/g, encodeURIComponent(mmsi)).replace(/\{key\}/g, encodeURIComponent(key)).replace(/\{from\}/g, day).replace(/\{to\}/g, nxt).replace(/\{day\}/g, day);

@@ -1,6 +1,6 @@
 // Tab "Post Race Analyses": GPS-track (opgenomen in de app, GPX/CSV-bestand of AIS via eigen API-sleutel) vergelijken met
 // de simulatie vóór de race en met de polar, met de actuele (achteraf) modelwind van de racedag op plaats en tijd.
-import { parseTrackFile, parseAisJson, aisUrl, cleanTrack, addMotion, matchMarks, perfSeries, legStats, overall, packTrack, unpackTrack, distNm } from '../core/analysis.js';
+import { parseTrackFile, parseAisJson, aisUrl, vesselApiUrl, findNextToken, cleanTrack, addMotion, matchMarks, perfSeries, legStats, overall, packTrack, unpackTrack, distNm } from '../core/analysis.js';
 import { fieldUrl, parseField, fieldWind, fieldAt, sampleGrid } from '../core/wxfield.js';
 import { simulate, windAt } from '../core/wx.js';
 import { RACES } from '../data/results.js';
@@ -65,7 +65,7 @@ export function initAnalysis(o) {
     $('paDay').innerHTML = D.map(([k, l]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${esc(l)}${LS.get(K_TRK + k) ? ' ✓' : ''}</option>`).join('');
     A.day = cur;
   }
-  const ais = () => { const a = { provider: 'datalastic', mmsi: '', key: '', tpl: '', ...(LS.get(K_AIS) || {}) }; if (!a.mmsi && getMeta().boat === 'dm') a.mmsi = '244001631'; return a; };  // MMSI Dream Machine
+  const ais = () => { const a = { provider: 'vesselapi', mmsi: '', key: '', tpl: '', ...(LS.get(K_AIS) || {}) }; if (!a.mmsi && getMeta().boat === 'dm') a.mmsi = '244001631'; return a; };  // MMSI Dream Machine
   function fillAis() { const a = ais(); $('paProv').value = a.provider; $('paMmsi').value = a.mmsi; $('paKey').value = a.key; $('paTpl').value = a.tpl; $('paTplRow').hidden = a.provider !== 'custom'; }
   function saveAis() { LS.set(K_AIS, { provider: $('paProv').value, mmsi: $('paMmsi').value.trim(), key: $('paKey').value.trim(), tpl: $('paTpl').value.trim() }); $('paTplRow').hidden = $('paProv').value !== 'custom'; }
 
@@ -112,10 +112,15 @@ export function initAnalysis(o) {
     if (!a.mmsi || !a.key || (a.provider === 'custom' && !a.tpl)) { msg.textContent = 'Vul MMSI en API-sleutel in (en bij eigen dienst het URL-sjabloon).'; return; }
     msg.textContent = 'AIS-data ophalen…';
     try {
-      const r = await fetch(aisUrl(a, A.day)); const j = await r.json().catch(() => null);
-      if (!r.ok) throw new Error((j && (j.message || j.error || j.meta && j.meta.message)) || 'HTTP ' + r.status);
-      const pts = parseAisJson(j); if (!pts.length) throw new Error('geen posities in het antwoord');
-      const n = storeTrack(pts, 'ais', { provider: a.provider === 'custom' ? 'eigen dienst' : 'Datalastic' });
+      const get = async (u, hdr) => { const r = await fetch(u, hdr ? { headers: hdr } : undefined); const j = await r.json().catch(() => null);
+        if (!r.ok) throw new Error((j && (j.message || j.error && (j.error.message || j.error) || j.meta && j.meta.message)) || 'HTTP ' + r.status); return j; };
+      let pts = [];
+      if (a.provider === 'vesselapi') {
+        let next = null, pages = 0;
+        do { const j = await get(vesselApiUrl(a.mmsi, A.day, next), { Authorization: 'Bearer ' + a.key }); pts = pts.concat(parseAisJson(j)); next = findNextToken(j); pages++; msg.textContent = `AIS-data ophalen… ${pts.length} posities`; } while (next && pages < 30);
+      } else pts = parseAisJson(await get(aisUrl(a, A.day)));
+      if (!pts.length) throw new Error('geen posities voor deze dag (valt het schip buiten het bereik van AIS-ontvangers, of is de dag ouder dan de dienst bewaart?)');
+      const n = storeTrack(pts, 'ais', { provider: { custom: 'eigen dienst', vesselapi: 'VesselAPI', datalastic: 'Datalastic' }[a.provider] });
       msg.textContent = `${n} AIS-posities opgehaald.`; fillDays(); load(); await analyse();
     } catch (e) {
       msg.textContent = `AIS ophalen mislukt (${e.message}). Controleer MMSI, sleutel en tegoed; blokkeert de dienst aanvragen vanuit de browser, download de track dan als CSV/JSON en laad hem als bestand.`;
