@@ -1,12 +1,12 @@
 // Wintercup banenkaart - service worker.
 // index.html: altijd eerst vers van het netwerk. App, kaartdata, luchtfoto en PDF-module hebben een vaste naam per versie
 // en worden maar één keer gedownload en daarna uit de cache gebruikt. Kaarttegels (PDOK) worden bewaard zodra ze bekeken zijn.
-const VER = '25e5c3da';
+const VER = '303e2c83';
 const CACHE = 'wintercup-' + VER;
 const ASSETS_CACHE = 'wintercup-assets';
 const TILES = 'wintercup-tiles';
 const MAX_TILES = 4000;
-const ASSETS = ["app.ce3b595e.js", "data.55e8fe2b.json", "aerial.45820b3e.jpg", "jspdf.umd.min.js"];
+const ASSETS = ["app.2a96b696.js", "data.55e8fe2b.json", "aerial.45820b3e.jpg", "jspdf.umd.min.js"];
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 const isAsset = p => ASSETS.some(a => p.endsWith('/' + a));
 self.addEventListener('install', e => {

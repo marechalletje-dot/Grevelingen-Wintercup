@@ -104,7 +104,7 @@ function placeLab(e,side,k){const o=(+e.dataset.o||13)*side;const x=+e.dataset.x
 function declutter(k){
   const placed=[];const R=e=>e.getBoundingClientRect();
   const hit=r=>placed.some(p=>!(r.right<p.left||r.left>p.right||r.bottom<p.top||r.top>p.bottom));
-  document.querySelectorAll('#toplayer .legno,#course .gateb,#course .fship,#course .fbuoy,#course .sline').forEach(e=>placed.push(R(e)));
+  document.querySelectorAll('#toplayer .legno,#course .gateb,#course .fship,#course .fbuoy,#course .sline,#course .rbadge rect').forEach(e=>placed.push(R(e)));
   document.querySelectorAll('#course .mk .lab').forEach(e=>{const x=+e.dataset.x,y=+e.dataset.y;
     for(const [dx,dy,an] of [[12,-8,'start'],[-12,-8,'end'],[12,15,'start'],[-12,15,'end'],[0,-16,'middle'],[0,22,'middle']]){e.setAttribute('x',x+dx*k);e.setAttribute('y',y+dy*k);e.setAttribute('text-anchor',an);const r=R(e);if(!hit(r)){placed.push(r);return}}
     e.setAttribute('x',x+12*k);e.setAttribute('y',y-8*k);e.setAttribute('text-anchor','start');placed.push(R(e))});
@@ -234,13 +234,13 @@ function spiPlan(legs){
   });
   return {items,ev,html:'<ol>'+items.map(it=>`<li><span class="at">${it.at}</span><span>${it.html}</span></li>`).join('')+'</ol>'};
 }
-const OFFS_NM=10/1852;
+const OFFS_NM=10/1852,OFFS_PASS=60/1852;// rondingsmerk 10 m, vaarwater-/passeerboei 60 m zodat het niet lijkt alsof hij gerond wordt
 function offsetLegs(legs,c){
   // global vertex list; vertices on a buoy are moved 10 m to the side the boat passes
   legs.forEach(l=>{l.p=l.p.map(q=>q.slice())});
   const V=[];   // {li,j,kind,side}
   legs.forEach((l,i)=>{for(let j=(i===0?0:1);j<l.p.length;j++){const last=j===l.p.length-1;let kind='fix',side=null;
-    if(i>0&&last){const m=c.marks[i-1];if(m&&m.b&&m.s){kind='mark';side=m.s}}
+    if(i>0&&last){const m=c.marks[i-1];if(m&&m.b&&m.s){kind='mark';side=m.s;if(m.auto)kind='pmark'}}
     else if(i>0&&!last&&l.wp&&l.wp[j])kind='turn';
     V.push({li:i,j,kind,side})}});
   const P=V.map(v=>legs[v.li].p[v.j]);const EN=p=>[p[0],-p[1]];
@@ -248,10 +248,10 @@ function offsetLegs(legs,c){
     const a=EN(P[k-1]),o=EN(p),b=EN(P[k+1]);
     let ux=o[0]-a[0],uy=o[1]-a[1],wx=b[0]-o[0],wy=b[1]-o[1];const lu=Math.hypot(ux,uy)||1,lw=Math.hypot(wx,wy)||1;ux/=lu;uy/=lu;wx/=lw;wy/=lw;
     let dx,dy;const ix=wx-ux,iy=wy-uy,li=Math.hypot(ix,iy);
-    if(v.kind==='mark'){let tx=ux+wx,ty=uy+wy;const lt=Math.hypot(tx,ty);if(lt<1e-6){tx=ux;ty=uy}else{tx/=lt;ty/=lt}
+    if(v.kind==='mark'||v.kind==='pmark'){let tx=ux+wx,ty=uy+wy;const lt=Math.hypot(tx,ty);if(lt<1e-6){tx=ux;ty=uy}else{tx/=lt;ty/=lt}
       const sg=v.side==='SB'?1:-1;dx=-ty*sg;dy=tx*sg;if(li>0.5&&(-ix/li*dx-iy/li*dy)<0){dx=-ix/li;dy=-iy/li}}
     else{if(li<1e-6)return p;dx=-ix/li;dy=-iy/li}
-    const n=Math.hypot(dx,dy)||1;return [o[0]+dx/n*OFFS_NM,-(o[1]+dy/n*OFFS_NM)]});
+    const n=Math.hypot(dx,dy)||1,off=v.kind==='mark'?OFFS_NM:OFFS_PASS;return [o[0]+dx/n*off,-(o[1]+dy/n*off)]});
   V.forEach((v,k)=>{legs[v.li].p[v.j]=NP[k];if(v.j===legs[v.li].p.length-1&&legs[v.li+1])legs[v.li+1].p[0]=NP[k]});
   legSegs(legs);
 }
@@ -382,6 +382,11 @@ function show(fit){
     if(m.l==='Finish')return;
     const g2=el('g',{class:'mk'},gm);
     el('circle',{class:'ring '+sideCls(m.s)+(m.auto||m.pass?' passring':''),'data-r':9,cx:m.x,cy:m.y},g2);if(m.auto||m.pass)el('title',{},g2).textContent=m.auto?PASS_T:PASS_M;
+    if(m.s){const ps=!!(m.auto||m.pass),sb=m.s==='SB';const bd=el('g',{class:'rbadge '+sideCls(m.s)+(ps?' pass':''),'data-s':1},gm);bd.dataset.x=m.x;bd.dataset.y=m.y;
+      if(!ps){// pijl om het merk: stuurboord ronden = met de klok mee, bakboord = tegen de klok in
+        el('path',{class:'rarc',d:sb?'M-12,-7 A13.5,13.5 0 0 1 12,-7':'M12,-7 A13.5,13.5 0 0 0 -12,-7'},bd);
+        el('path',{class:'rhead',d:sb?'M12,-7 l-6.5,-1.2 l3.6,-4.6 Z':'M-12,-7 l6.5,-1.2 l-3.6,-4.6 Z'},bd)}
+      el('rect',{x:-23,y:12,width:46,height:14,rx:7},bd);const tt=el('text',{x:0,y:22.2},bd);tt.textContent=(ps?'pass. ':'rond ')+m.s}
     const key=m.b||m.l;seen[key]=(seen[key]||0)+1;
     if(seen[key]===1){const t=el('text',{class:'lab'},g2);t.dataset.x=m.x;t.dataset.y=m.y;t.dataset.key=key;t.textContent=m.l.replace(/\s*\(gele ton\)/i,'').replace(/[‘’']/g,'')}
     else{const t=gm.querySelector(`text[data-key="${CSS.escape(key)}"]`);if(t)t.textContent=t.textContent.replace(/ ×\d+$/,'')+' ×'+seen[key]}

@@ -13,7 +13,7 @@ export function foot(a, b, q) { const dx = b[0] - a[0], dy = b[1] - a[1], L2 = d
  * Voor elk merk waar de route van het merk af draait (merk buiten de bocht) en de rechte lijn het merk aan de goede kant laat liggen,
  * wordt de hoek afgesneden: het rak eindigt dan dwars van het merk, het volgende rak begint daar. Geeft de indexen van de passeermerken.
  */
-export function cutPassMarks(legs, marks, { clear = () => true, freeIn = () => true, minClear = 0.02 } = {}) {
+export function cutPassMarks(legs, marks, { clear = () => true, freeIn = () => true, minClear = 0.025 } = {}) {
   const passed = [];
   for (let i = 1; i < legs.length - 1; i++) {
     const m = marks[i - 1]; if (!m || !m.s || m.auto || m.b == null) continue;
