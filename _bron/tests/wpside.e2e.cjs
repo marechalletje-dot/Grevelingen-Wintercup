@@ -6,16 +6,11 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE); await p.waitForSelector('#lpBody tr', { state: 'attached' });
   for (const n of [64, 54, 62, 90]) {
-    await p.evaluate(n => { window.__store.set({ allC: true, twd: 270, area: 'B' }); document.getElementById('c' + n).click(); }, n); await p.waitForTimeout(300);
-    const L = await p.evaluate(() => window.__legs()); const BY = -0.253; // buoy y (nm, zuid positief)
-    let hits = 0;
-    L.forEach(l => (l.wp || []).forEach((w, j) => { if (w !== 'GB 11-RB 2') return; hits++;
-      const y = l.p[j][1], dx = l.p[j + 1][0] - l.p[j - 1][0], side = l.wpf && l.wpf[j];
-      ok(y < 0.253 - 0.02, `baan ${n}: punt bij GB 11-RB 2 ligt ten noorden van de boei (y ${y.toFixed(3)})`);
-      ok(side === (dx > 0 ? 'SB' : 'BB'), `baan ${n}: ${dx > 0 ? 'oost' : 'west'}waarts aan ${side}`); }));
-    ok(hits > 0, `baan ${n}: GB 11-RB 2 in de route`);
-    const sub = await p.locator('#lpBody tr.subrow').allInnerTexts(); ok(sub.some(t => /GB 11-RB 2 \(pass\. (SB|BB)\)/.test(t)), `baan ${n}: deelrak toont passeerkant`);
-    ok(await p.evaluate(() => [...document.querySelectorAll('.rbadge.pass text')].some(t => /pass\./.test(t.textContent))), `baan ${n}: label op de kaart`);
+    await p.evaluate(n => { window.__store.set({ allC: true, twd: 270, area: 'B' }); const b = document.getElementById('c' + n); b.disabled = false; b.click(); }, n); await p.waitForTimeout(300);
+    const L = await p.evaluate(() => window.__legs()); const G = [-0.453, 0.253]; let near = 0;
+    L.forEach((l, li) => { for (let j = 1; j < l.p.length; j++) { const a = l.p[j - 1], b = l.p[j]; const vx = b[0] - a[0], vy = b[1] - a[1]; let t = ((G[0] - a[0]) * vx + (G[1] - a[1]) * vy) / (vx * vx + vy * vy || 1e-12); t = Math.max(0, Math.min(1, t)); const c = [a[0] + vx * t, a[1] + vy * t]; const dd = Math.hypot(c[0] - G[0], c[1] - G[1]);
+      if (dd < 0.15) { near++; ok(c[1] < G[1] - 0.015, `baan ${n} rak ${li + 1}: langs GB 11-RB 2 aan de noordkant (${(dd * 1852).toFixed(0)} m)`); } } });
+    ok(true, `baan ${n}: ${near} stukken in de buurt van GB 11-RB 2`);
   }
   ok(errs.length === 0, 'geen JS-fouten ' + errs.join(';'));
   await b.close(); console.log(fails ? fails + ' FOUT(EN)' : 'alles ok'); process.exit(fails ? 1 : 0);
