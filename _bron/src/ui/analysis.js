@@ -46,7 +46,7 @@ export function savePreSim(day, sim, meta) {
 }
 
 export function initAnalysis(o) {
-  const $ = id => document.getElementById(id);
+  const $ = id => (id === 'paKeyRow' ? [...document.querySelectorAll('.pa-keyrow')] : document.getElementById(id));
   if (!$('tabAnalyse')) return { render() {} };
   const { getLegs, getMeta, setCourse, getPolar, getCtx, xyLL, waterD, slotStart, boats } = o;
   let A = { day: null, trk: null, act: null };
@@ -59,15 +59,16 @@ export function initAnalysis(o) {
     if (!m.has(today)) m.set(today, dlabel(today) + ' (vandaag)');
     return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }
+  const hasTrk = k => { const t = LS.get(K_TRK + k); return !!(t && t.pts && t.pts.length >= 20); };
   function fillDays() {
     const D = days(); let cur = A.day || $('paDay').value;
-    if (!D.some(([k]) => k === cur)) cur = (D.find(([k]) => LS.get(K_TRK + k)) || D.find(([k]) => RACES.some(r => r.date === k)) || D[0])[0];
-    $('paDay').innerHTML = D.map(([k, l]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${esc(l)}${LS.get(K_TRK + k) ? ' ✓' : ''}</option>`).join('');
+    if (!D.some(([k]) => k === cur)) cur = (D.find(([k]) => hasTrk(k)) || D.find(([k]) => RACES.some(r => r.date === k)) || D[0])[0];
+    $('paDay').innerHTML = D.map(([k, l]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${esc(l)}${hasTrk(k) ? ' ✓' : ''}</option>`).join('');
     A.day = cur;
   }
   const ais = () => { const a = { provider: 'vesselapi', mmsi: '', key: '', tpl: '', ...(LS.get(K_AIS) || {}) }; if (!a.mmsi && getMeta().boat === 'dm') a.mmsi = '244001631'; return a; };  // MMSI Dream Machine
-  function fillAis() { const a = ais(); $('paProv').value = a.provider; $('paMmsi').value = a.mmsi; $('paKey').value = a.key; $('paTpl').value = a.tpl; $('paTplRow').hidden = a.provider !== 'custom'; }
-  function saveAis() { LS.set(K_AIS, { provider: $('paProv').value, mmsi: $('paMmsi').value.trim(), key: $('paKey').value.trim(), tpl: $('paTpl').value.trim() }); $('paTplRow').hidden = $('paProv').value !== 'custom'; }
+  function fillAis() { const a = ais(); $('paProv').value = a.provider; $('paMmsi').value = a.mmsi; $('paKey').value = a.key; $('paTpl').value = a.tpl; $('paTplRow').hidden = !['custom', 'proxy'].includes(a.provider); $('paKeyRow').forEach(e => e.hidden = a.provider === 'proxy'); }
+  function saveAis() { LS.set(K_AIS, { provider: $('paProv').value, mmsi: $('paMmsi').value.trim(), key: $('paKey').value.trim(), tpl: $('paTpl').value.trim() }); $('paTplRow').hidden = !['custom', 'proxy'].includes($('paProv').value); $('paKeyRow').forEach(e => e.hidden = $('paProv').value === 'proxy'); }
 
   // ---------- gegevens van de gekozen dag ----------
   function load() {
@@ -81,7 +82,7 @@ export function initAnalysis(o) {
     $('paUseCourse').hidden = !differs; if (differs) $('paUseCourse').textContent = `Gebruik baan ${m.baan}${m.area ? ' / ' + m.area : ''}${m.boat && boats[m.boat] ? ' · ' + boats[m.boat].name : ''} van deze race`;
     A.meta = m;
     // track
-    if (A.trk && A.trk.pts && A.trk.pts.length) {
+    if (A.trk && A.trk.pts && A.trk.pts.length >= 20) {
       const P = unpackTrack(A.trk.pts); const src = { app: 'opgenomen in de app', file: 'uit bestand' + (A.trk.name ? ' ' + A.trk.name : ''), ais: 'AIS (' + (A.trk.provider || 'API') + ')' }[A.trk.src] || A.trk.src;
       $('paTrk').innerHTML = `✓ Track ${esc(src)}: ${P.length} punten, ${hm(P[0].t)}–${hm(P[P.length - 1].t)}`;
       $('paDel').hidden = false;
@@ -109,7 +110,7 @@ export function initAnalysis(o) {
   }
   async function fetchAis() {
     saveAis(); const a = ais(); const msg = $('paMsg');
-    if (!a.mmsi || !a.key || (a.provider === 'custom' && !a.tpl)) { msg.textContent = 'Vul MMSI en API-sleutel in (en bij eigen dienst het URL-sjabloon).'; return; }
+    if (!a.mmsi || (a.provider !== 'proxy' && !a.key) || (['custom', 'proxy'].includes(a.provider) && !a.tpl)) { msg.textContent = a.provider === 'proxy' ? 'Vul MMSI en de URL van je Apps Script-proxy in.' : 'Vul MMSI en API-sleutel in (en bij eigen dienst het URL-sjabloon).'; return; }
     msg.textContent = 'AIS-data ophalen…';
     try {
       const get = async (u, hdr) => { const r = await fetch(u, hdr ? { headers: hdr } : undefined); const j = await r.json().catch(() => null);
@@ -118,12 +119,16 @@ export function initAnalysis(o) {
       if (a.provider === 'vesselapi') {
         let next = null, pages = 0;
         do { const j = await get(vesselApiUrl(a.mmsi, A.day, next), { Authorization: 'Bearer ' + a.key }); pts = pts.concat(parseAisJson(j)); next = findNextToken(j); pages++; msg.textContent = `AIS-data ophalen… ${pts.length} posities`; } while (next && pages < 30);
+      } else if (a.provider === 'proxy') {
+        const j = await get(a.tpl + (a.tpl.includes('?') ? '&' : '?') + new URLSearchParams({ mmsi: a.mmsi, day: A.day }).toString());
+        if (j && j.error) throw new Error(j.error); pts = parseAisJson(j);
       } else pts = parseAisJson(await get(aisUrl(a, A.day)));
       if (!pts.length) throw new Error('geen posities voor deze dag (valt het schip buiten het bereik van AIS-ontvangers, of is de dag ouder dan de dienst bewaart?)');
-      const n = storeTrack(pts, 'ais', { provider: { custom: 'eigen dienst', vesselapi: 'VesselAPI', datalastic: 'Datalastic' }[a.provider] });
+      const n = storeTrack(pts, 'ais', { provider: { custom: 'eigen dienst', vesselapi: 'VesselAPI', datalastic: 'Datalastic', proxy: 'VesselAPI via proxy' }[a.provider] });
       msg.textContent = `${n} AIS-posities opgehaald.`; fillDays(); load(); await analyse();
     } catch (e) {
-      msg.textContent = `AIS ophalen mislukt (${e.message}). Controleer MMSI, sleutel en tegoed; blokkeert de dienst aanvragen vanuit de browser, download de track dan als CSV/JSON en laad hem als bestand.`;
+      const net = /fetch|network/i.test(e.message);
+      msg.textContent = net && a.provider !== 'proxy' ? `AIS ophalen mislukt: de dienst staat aanvragen rechtstreeks vanuit de browser niet toe. Kies bij Dienst "VesselAPI via eigen proxy (Google Apps Script)" en volg de stappen in de Uitleg.` : `AIS ophalen mislukt (${e.message}). Controleer MMSI, sleutel/proxy en tegoed.`;
     }
   }
   async function fetchActual() {
@@ -146,7 +151,7 @@ export function initAnalysis(o) {
   // ---------- analyse ----------
   async function analyse() {
     const out = $('paOut'); const msg = $('paMsg');
-    if (!A.trk || !A.trk.pts || !A.trk.pts.length) { out.hidden = true; return; }
+    if (!A.trk || !A.trk.pts || A.trk.pts.length < 20) { out.hidden = true; return; }
     const legs = getLegs(); if (!legs || !legs.length) { msg.textContent = 'Geen baan beschikbaar.'; return; }
     if (!A.act && navigator.onLine !== false) await fetchActual();
     const start = startMs();
