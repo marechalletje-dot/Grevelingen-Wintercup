@@ -18,6 +18,7 @@ import { initWxField } from './ui/wxfield.js';
 import { initAnalysis, recordFix, savePreSim } from './ui/analysis.js';
 import { slotTimes } from './core/startseq.js';
 import { beatAngle, laylines, gateFromLine } from './core/layline.js';
+import { cutPassMarks } from './core/passmarks.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -252,11 +253,20 @@ function offsetLegs(legs,c){
     else{if(li<1e-6)return p;dx=-ix/li;dy=-iy/li}
     const n=Math.hypot(dx,dy)||1;return [o[0]+dx/n*OFFS_NM,-(o[1]+dy/n*OFFS_NM)]});
   V.forEach((v,k)=>{legs[v.li].p[v.j]=NP[k];if(v.j===legs[v.li].p.length-1&&legs[v.li+1])legs[v.li+1].p[0]=NP[k]});
+  legSegs(legs);
+}
+function legSegs(legs){
   // recompute courses and distances for the shifted geometry
   legs.forEach((l,i)=>{if(i===0)return;const ns=[];for(let j=1;j<l.p.length;j++){const a=l.p[j-1],b=l.p[j];const dx=b[0]-a[0],dy=-(b[1]-a[1]);const nm=Math.hypot(dx,dy);
       const tw=((Math.atan2(dx,dy)*180/Math.PI)+360)%360;ns.push({nm:+nm.toFixed(2),tw:Math.round(tw),mw:Math.round(((tw-D.decl)%360+360)%360)})}
     l.s=ns;l.nm=+ns.reduce((a,x)=>a+x.nm,0).toFixed(2)});
 }
+/** Ligt het lijnstuk a-b in bevaarbaar water (niet over land, ondiepte < 2,4 m of gebied zonder dieptedata)? */
+function segClear(a,b){const W=$('water'),Sh=$('dShal'),No=$('dNod');if(!W)return false;
+  const inF=(el,x,y)=>{if(!el||!el.getAttribute('d'))return false;try{return el.isPointInFill(new DOMPoint(x,y))}catch(e){const q=svg.createSVGPoint();q.x=x;q.y=y;return el.isPointInFill(q)}};
+  const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const n=Math.max(2,Math.ceil(L/0.015));
+  try{for(let k=1;k<n;k++){const f=k/n,x=a[0]+(b[0]-a[0])*f,y=a[1]+(b[1]-a[1])*f;if(!inF(W,x,y)||inF(Sh,x,y)||inF(No,x,y))return false}}catch(e){return false}
+  return true}
 function crsRange(st){return st.span<=4?pad3(st.mw):`${pad3(st.lo)}–${pad3(st.hi)}`}
 function subName(l,j){const w=l.wp&&l.wp[j+1];if(j===l.s.length-1)return '→ '+l.t;const sd=l.wps&&l.wps[j+1];return w?'→ langs '+w+(sd?' '+sd+' ⚠':''):(j===0?'→ vaarwater in':'deel '+String.fromCharCode(97+j))}
 function boatIcon(tw){const t=twaOf(tw);
@@ -276,8 +286,9 @@ function boatIcon(tw){const t=twaOf(tw);
    <line x1="${mx}" y1="${my}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="var(--ink)" stroke-width="1.4"/>
    <path d="M${fx} ${fy} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>
    <circle cx="${mx}" cy="${my}" r="1.4" fill="var(--ink)"/></svg>`}
+const PASS_M='Merkteken van de baan dat je alleen aan deze kant laat liggen: het volgende rondingsmerk ligt in dezelfde richting, dus de route gaat er in een rechte lijn langs (kortste weg).';
 const PASS_T='Vaarwaterboei, geen merkteken van de baan. Je passeert hem aan deze zijde volgens art. 9 (genoemd vaarwater). Of je de hoek mag afsnijden is niet zeker: vraag de wedstrijdleiding.';
-function sideHtml(m){if(!m||!m.s)return '';return m.auto?`<span class="pill ${sideCls(m.s)} pass" title="${PASS_T}">passeren ${m.s}</span><span class="passnote">vaarwaterboei, geen merkteken</span>`:`<span class="pill ${sideCls(m.s)}">${m.s}</span>`}
+function sideHtml(m){if(!m||!m.s)return '';if(m.pass&&!m.auto)return `<span class="pill ${sideCls(m.s)} pass" title="${PASS_M}">passeren ${m.s}</span><span class="passnote">niet ronden</span>`;return m.auto?`<span class="pill ${sideCls(m.s)} pass" title="${PASS_T}">passeren ${m.s}</span><span class="passnote">vaarwaterboei, geen merkteken</span>`:`<span class="pill ${sideCls(m.s)}">${m.s}</span>`}
 function twaHtml(tw){const t=twaOf(tw);return `<span class="twa ${t.side.toLowerCase()}">${Math.round(t.a)}° ${t.side}</span> <span class="pos">${pos(t.a)}</span>`}
 let SG_SRC={start:'berekend',gate:'berekend'};
 function windInd(){const a=$('wiArrow');if(!a)return;a.setAttribute('transform',`rotate(${ST.twd%360})`);$('wiTxt').textContent=`${pad3(ST.twd)} · ${ST.tws} kn`}
@@ -305,6 +316,9 @@ function show(fit){
   $('twdHint').textContent=`Wind uit ${wname(ST.twd)} · start en gate berekend voor ${wk}°`;
   const legs=[Object.assign({f:'Start',t:'Gate',via:[],kind:'var'},BEAT),Object.assign({kind:''},FIRST),...c.legs.map(l=>Object.assign({kind:''},l))];
   offsetLegs(legs,c);
+  // merktekens die je alleen aan een kant laat liggen (merk buiten de bocht): kortste weg naar het volgende rondingsmerk
+  c.marks.forEach(m=>{delete m.pass});
+  try{cutPassMarks(legs,c.marks,{clear:segClear,freeIn:(i,j)=>!(legs[i].wp&&legs[i].wp[j])}).forEach(k=>{c.marks[k].pass=true});legSegs(legs)}catch(e){console.error('passeermerken',e)}
   countManoeuvres(legs);
   // fairway corridors used
   const used=[...new Set(legs.flatMap(l=>l.via))];
@@ -378,7 +392,7 @@ function show(fit){
   c.marks.forEach((m)=>{
     if(m.l==='Finish')return;
     const g2=el('g',{class:'mk'},gm);
-    el('circle',{class:'ring '+sideCls(m.s)+(m.auto?' passring':''),'data-r':9,cx:m.x,cy:m.y},g2);if(m.auto)el('title',{},g2).textContent=PASS_T;
+    el('circle',{class:'ring '+sideCls(m.s)+(m.auto||m.pass?' passring':''),'data-r':9,cx:m.x,cy:m.y},g2);if(m.auto||m.pass)el('title',{},g2).textContent=m.auto?PASS_T:PASS_M;
     const key=m.b||m.l;seen[key]=(seen[key]||0)+1;
     if(seen[key]===1){const t=el('text',{class:'lab'},g2);t.dataset.x=m.x;t.dataset.y=m.y;t.dataset.key=key;t.textContent=m.l.replace(/\s*\(gele ton\)/i,'').replace(/[‘’']/g,'')}
     else{const t=gm.querySelector(`text[data-key="${CSS.escape(key)}"]`);if(t)t.textContent=t.textContent.replace(/ ×\d+$/,'')+' ×'+seen[key]}
@@ -439,7 +453,7 @@ function markFocus(){
   $('lnLab').textContent=`Rak ${LV.i+1} / ${n}`;
   const st=l.s.length>1?legStats(l):{mw:l.s[0].mw,tw:l.s[0].tw,span:0};const t=twaOf(st.tw);
   const mk=LV.i===0?null:(c.marks[LV.i-1]||{});const to=LV.i===0?'Gate (kruisrak)':l.t;
-  const side=mk&&mk.s?(mk.auto?`passeren ${mk.s}`:`ronden ${mk.s}`):(LV.i===0?'door de gate':'finishlijn');
+  const side=mk&&mk.s?(mk.auto||mk.pass?`passeren ${mk.s}`:`ronden ${mk.s}`):(LV.i===0?'door de gate':'finishlijn');
   $('legInfo').innerHTML=`<div class="t">Rak ${LV.i+1}: ${esc(LV.i===0?'Start':LV.i===1?'Gate':l.f)} → ${esc(to)}</div>
    ${l.via.length?`<div class="sub">via ${esc(l.via.join(', '))}</div>`:''}
    <div>Koers <span class="m"><b>${pad3(st.mw)}</b>${st.span>4?' ('+crsRange(st)+')':''}</span> · TWA <span class="m">${Math.round(t.a)}°</span> ${pos(t.a)}</div>
@@ -492,7 +506,7 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
   const btw=brgT(G.xy,nx),dtw=Math.hypot(nx[0]-G.xy[0],nx[1]-G.xy[1]);
   const c=CUR.c,mk=NAV.leg===0?null:(c.marks[NAV.leg-1]||{});const to=NAV.leg===0?'Gate':l.t;
   const isEnd=nx===l.p[l.p.length-1];
-  $('gTo').textContent=`Rak ${NAV.leg+1}/${CUR.legs.length} → ${isEnd?to:'routepunt '+(pr.j)+' van '+(l.p.length-1)}${isEnd&&mk&&mk.s?` (${mk.auto?'pass.':'rond'} ${mk.s})`:''}`;
+  $('gTo').textContent=`Rak ${NAV.leg+1}/${CUR.legs.length} → ${isEnd?to:'routepunt '+(pr.j)+' van '+(l.p.length-1)}${isEnd&&mk&&mk.s?` (${mk.auto||mk.pass?'pass.':'rond'} ${mk.s})`:''}`;
   $('gBtw').textContent=pad3(btw-D.decl).replace('°','');$('gDtw').textContent=dtw.toFixed(2);
   // countdown tot de volgende boeironding (einde van dit rak)
   {const a=l.p[Math.max(0,pr.j-1)],b=l.p[pr.j];const segB=brgT(a,b);
@@ -502,7 +516,7 @@ function gpsUpdate(){if(!G.on||!G.xy||!CUR)return;
    if(G.vmc!=null&&G.vmc>0.5){etaH=pr.rem/G.vmc;src='op je snelheid richting boei'}else{etaH=legTime(l)*(pr.rem/(legLen||1));src='schatting polar'}
    const k=G.demo?demoSpd():1;G.cdTarget=Date.now()+etaH*3600000/k;G.cdSrc=src+(G.demo?` · proefvaart ×${k}`:'');
    const markName=NAV.leg===0?'de gate':(NAV.leg===CUR.legs.length-1?'de finish':l.t);
-   const side=mk&&mk.s?(mk.auto?` (pass. ${mk.s})`:` (rond ${mk.s})`):'';
+   const side=mk&&mk.s?(mk.auto||mk.pass?` (pass. ${mk.s})`:` (rond ${mk.s})`):'';
    if(!(RACE.start&&Date.now()<RACE.start&&!G.demo))$('gCdTo').textContent=`einde rak ${NAV.leg+1}: ${markName}${side}`;G.cdLeg=NAV.leg;G.pr=pr;cdTick()}
   {const vel=G.vmc!=null&&G.vmc>0.5?G.vmc:(G.sog>0.5?G.sog:null);let ttg=vel?dtw/vel:(isEnd?legTime(l)*(pr.rem/((pr.along+pr.rem)||1)):null);
    if(ttg!=null){const s=Math.round(ttg*3600);$('gTtg').textContent=s>=3600?`${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('gTtgU').textContent=s>=3600?'u:min':'min:s'}else{$('gTtg').textContent='–';$('gTtgU').textContent='min'}}
@@ -999,7 +1013,7 @@ store.on(['wfOn','wfData'],()=>setTimeout(()=>{if(document.body.classList.contai
 try{WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});}catch(e){console.error('windveld',e)}
 store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
 
-window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));// voor tests
+window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));window.__pass=()=>CUR?CUR.c.marks.filter(m=>m.pass).map(m=>m.l):[];// voor tests
 var PRA=initAnalysis({store,llXY,xyLL,boats:BOATS,getLegs:()=>CUR&&CUR.legs,getMeta:()=>({baan:ST.baan,area:ST.area,boat:ST.boat}),
   getPolar:b=>(BOATS[b]||BOATS[ST.boat]).polar,getCtx:calcCtx,waterD:()=>$('water').getAttribute('d'),
   slotStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
