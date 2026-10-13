@@ -101,9 +101,28 @@ function applyVB(kOver){
   placeTip();
 }
 function placeLab(e,side,k){const o=(+e.dataset.o||13)*side;const x=+e.dataset.x+(+e.dataset.nx)*k*o,y=+e.dataset.y+(+e.dataset.ny)*k*o;e.setAttribute('x',x);e.setAttribute('y',y);if(e.dataset.rot!==undefined)e.setAttribute('transform',`rotate(${e.dataset.rot} ${x} ${y})`)}
+/** Raknummers zo plaatsen dat ze niet op een boei, merkteken, label of ander raknummer staan (schermruimte, één layout-pass). */
+function placeLegNos(k){
+  const L=[...document.querySelectorAll('#toplayer .legno')];if(!L.length)return;
+  const M=svg.getScreenCTM();if(!M)return;const scr=(x,y)=>[M.a*x+M.c*y+M.e,M.b*x+M.d*y+M.f];
+  const box=svg.getBoundingClientRect();const pad=3;
+  const obs=[];const vis=e=>{const r=e.getBoundingClientRect();if(r.width||r.height){if(r.right>box.left-40&&r.left<box.right+40&&r.bottom>box.top-40&&r.top<box.bottom+40)obs.push(r)}};
+  if($('buoys').style.display!=='none')document.querySelectorAll('#buoys .bz').forEach(vis);
+  document.querySelectorAll('#course .mk .ring,#course .rbadge rect,#course .gateb,#course .fship,#course .fbuoy,#course .sgh').forEach(vis);
+  const rad=10.5*LZ(k)+pad;const done=[];
+  const cost=(c)=>{let n=0;for(const r of obs){const dx=Math.max(r.left-c[0],0,c[0]-r.right),dy=Math.max(r.top-c[1],0,c[1]-r.bottom);if(dx*dx+dy*dy<rad*rad)n+=1}
+    for(const d of done)if(Math.hypot(d[0]-c[0],d[1]-c[1])<rad*2)n+=3;
+    if(c[0]<box.left+rad||c[0]>box.right-rad||c[1]<box.top+rad||c[1]>box.bottom-rad)n+=0.5;return n};
+  L.forEach(g=>{let C;try{C=JSON.parse(g.dataset.cand||'[]')}catch(e){C=[]}if(!C.length)return;
+    // eerst op de lijn; lukt dat niet, dan naast de lijn (loodrecht, net vrij van de lijn)
+    const off=(rad+2)*k,Q=C.concat(...[1,-1,2.1,-2.1].map(sd=>C.map(q=>[q[0]+(q[2]||0)*off*sd,q[1]+(q[3]||0)*off*sd,0,0,Math.abs(sd)>1?0.6:0.3])));
+    let best=null,bc=1e9;for(const q of Q){const c=scr(q[0],q[1]);const v=cost(c)+(q[4]||0);if(v<bc){bc=v;best=[q,c]}if(v===0)break}
+    const [q,c]=best;done.push(c);const ci=g.querySelector('circle'),t=g.querySelector('text');ci.setAttribute('cx',q[0]);ci.setAttribute('cy',q[1]);t.setAttribute('x',q[0]);t.setAttribute('y',q[1])});
+}
 function declutter(k){
   const placed=[];const R=e=>e.getBoundingClientRect();
   const hit=r=>placed.some(p=>!(r.right<p.left||r.left>p.right||r.bottom<p.top||r.top>p.bottom));
+  placeLegNos(k);
   document.querySelectorAll('#toplayer .legno,#course .gateb,#course .fship,#course .fbuoy,#course .sline,#course .rbadge rect').forEach(e=>placed.push(R(e)));
   document.querySelectorAll('#course .mk .lab').forEach(e=>{const x=+e.dataset.x,y=+e.dataset.y;
     for(const [dx,dy,an] of [[12,-8,'start'],[-12,-8,'end'],[12,15,'start'],[-12,15,'end'],[0,-16,'middle'],[0,22,'middle']]){e.setAttribute('x',x+dx*k);e.setAttribute('y',y+dy*k);e.setAttribute('text-anchor',an);const r=R(e);if(!hit(r)){placed.push(r);return}}
@@ -234,14 +253,16 @@ function spiPlan(legs){
   });
   return {items,ev,html:'<ol>'+items.map(it=>`<li><span class="at">${it.at}</span><span>${it.html}</span></li>`).join('')+'</ol>'};
 }
-const OFFS_NM=10/1852,OFFS_PASS=60/1852;// rondingsmerk 10 m, vaarwater-/passeerboei 60 m zodat het niet lijkt alsof hij gerond wordt
+const OFFS_NM=10/1852,OFFS_PASS=60/1852;
+// vaarwaterboeien die geen baanmerk zijn maar altijd aan één kant voorbij moeten (kompaskant waar je langs vaart)
+const WP_PASS={'GB 11-RB 2':'N'};// rondingsmerk 10 m, vaarwater-/passeerboei 60 m zodat het niet lijkt alsof hij gerond wordt
 function offsetLegs(legs,c){
   // global vertex list; vertices on a buoy are moved 10 m to the side the boat passes
   legs.forEach(l=>{l.p=l.p.map(q=>q.slice())});
   const V=[];   // {li,j,kind,side}
   legs.forEach((l,i)=>{for(let j=(i===0?0:1);j<l.p.length;j++){const last=j===l.p.length-1;let kind='fix',side=null;
     if(i>0&&last){const m=c.marks[i-1];if(m&&m.b&&m.s){kind='mark';side=m.s;if(m.auto)kind='pmark'}}
-    else if(i>0&&!last&&l.wp&&l.wp[j])kind='turn';
+    else if(i>0&&!last&&l.wp&&l.wp[j]){kind='turn';if(WP_PASS[l.wp[j]])side=WP_PASS[l.wp[j]]}
     V.push({li:i,j,kind,side})}});
   const P=V.map(v=>legs[v.li].p[v.j]);const EN=p=>[p[0],-p[1]];
   const NP=P.map((p,k)=>{const v=V[k];if(v.kind==='fix'||k===0||k===P.length-1)return p;
@@ -250,6 +271,10 @@ function offsetLegs(legs,c){
     let dx,dy;const ix=wx-ux,iy=wy-uy,li=Math.hypot(ix,iy);
     if(v.kind==='mark'||v.kind==='pmark'){let tx=ux+wx,ty=uy+wy;const lt=Math.hypot(tx,ty);if(lt<1e-6){tx=ux;ty=uy}else{tx/=lt;ty/=lt}
       const sg=v.side==='SB'?1:-1;dx=-ty*sg;dy=tx*sg;if(li>0.5&&(-ix/li*dx-iy/li*dy)<0){dx=-ix/li;dy=-iy/li}}
+    else if(v.kind==='turn'&&v.side){// vaarwaterboei met vaste passeerkant (bv. GB 11-RB 2 altijd aan de noordkant voorbij)
+      const C={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0]}[v.side];dx=C[0];dy=C[1];
+      let hx=ux+wx,hy=uy+wy;if(Math.hypot(hx,hy)<1e-6){hx=ux;hy=uy}
+      const l=legs[v.li];l.wpf=l.wpf||l.p.map(()=>null);l.wpf[v.j]=(hx*(-dy)-hy*(-dx))<0?'SB':'BB'}
     else{if(li<1e-6)return p;dx=-ix/li;dy=-iy/li}
     const n=Math.hypot(dx,dy)||1,off=v.kind==='mark'?OFFS_NM:OFFS_PASS;return [o[0]+dx/n*off,-(o[1]+dy/n*off)]});
   V.forEach((v,k)=>{legs[v.li].p[v.j]=NP[k];if(v.j===legs[v.li].p.length-1&&legs[v.li+1])legs[v.li+1].p[0]=NP[k]});
@@ -268,7 +293,7 @@ function segClear(a,b){const W=$('water'),Sh=$('dShal'),No=$('dNod');if(!W)retur
   try{for(let k=1;k<n;k++){const f=k/n,x=a[0]+(b[0]-a[0])*f,y=a[1]+(b[1]-a[1])*f;if(!inF(W,x,y)||inF(Sh,x,y)||inF(No,x,y))return false}}catch(e){return false}
   return true}
 function crsRange(st){return st.span<=4?pad3(st.mw):`${pad3(st.lo)}–${pad3(st.hi)}`}
-function subName(l,j){const w=l.wp&&l.wp[j+1];if(j===l.s.length-1)return '→ '+l.t;const sd=l.wps&&l.wps[j+1];return w?'→ langs '+w+(sd?' '+sd+' ⚠':''):(j===0?'→ vaarwater in':'deel '+String.fromCharCode(97+j))}
+function subName(l,j){const w=l.wp&&l.wp[j+1];if(j===l.s.length-1)return '→ '+l.t;const sf=l.wpf&&l.wpf[j+1],sd=l.wps&&l.wps[j+1];return w?'→ langs '+w+(sf?' (pass. '+sf+')':sd?' '+sd+' ⚠':''):(j===0?'→ vaarwater in':'deel '+String.fromCharCode(97+j))}
 function boatIcon(tw){const t=twaOf(tw);
   // sail on leeward side: wind from SB -> sail to port (left)
   const dir=t.side==='SB'?-1:1;const col=t.side==='SB'?'var(--green)':'var(--red)';
@@ -350,7 +375,12 @@ function show(fit){
       let qx=a[0]+(b[0]-a[0])*0.32,qy=a[1]+(b[1]-a[1])*0.32;
       for(const f of [0.62,0.18,0.82,0.45]){if(!LNPOS.some(([x,y])=>Math.hypot(x-qx,y-qy)<0.09))break;qx=a[0]+(b[0]-a[0])*f;qy=a[1]+(b[1]-a[1])*f}
       LNPOS.push([qx,qy]);
-      const n=el('g',{class:'legno','data-li':i},gn);el('circle',{cx:qx,cy:qy,r:0.01},n);const t=el('text',{x:qx,y:qy,dy:'0.36em'},n);t.textContent=i+1;
+      // kandidaatposities voor het raknummer (in declutter gekozen zodat het niet op een boei of label staat)
+      const cand=[[qx,qy]];{const P=l.p,acc=[0];for(let j=1;j<P.length;j++)acc.push(acc[j-1]+Math.hypot(P[j][0]-P[j-1][0],P[j][1]-P[j-1][1]));const T=acc[acc.length-1]||1;
+        cand[0].push(-(b[1]-a[1])/(L||1),(b[0]-a[0])/(L||1));
+        for(const f of [0.5,0.35,0.65,0.25,0.75,0.42,0.58,0.15,0.85,0.3,0.7,0.1,0.9,0.2,0.8,0.05,0.95]){const d=f*T;let j=1;while(j<P.length-1&&acc[j]<d)j++;const u=(d-acc[j-1])/((acc[j]-acc[j-1])||1);const sl=(acc[j]-acc[j-1])||1;
+          cand.push([P[j-1][0]+(P[j][0]-P[j-1][0])*u,P[j-1][1]+(P[j][1]-P[j-1][1])*u,-(P[j][1]-P[j-1][1])/sl,(P[j][0]-P[j-1][0])/sl])}}
+      const n=el('g',{class:'legno','data-li':i},gn);n.dataset.cand=JSON.stringify(cand.map(q=>q.map(v=>+v.toFixed(4))));el('circle',{cx:qx,cy:qy,r:0.01},n);const t=el('text',{x:qx,y:qy,dy:'0.36em'},n);t.textContent=i+1;
       // fairway name along the leg
       l.via.forEach((f,vi)=>{const key=f+'|'+i;const nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L;
         let rot2=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(rot2>90)rot2-=180;if(rot2<=-90)rot2+=180;
@@ -393,6 +423,13 @@ function show(fit){
     if(seen[key]===1){const t=el('text',{class:'lab'},g2);t.dataset.x=m.x;t.dataset.y=m.y;t.dataset.key=key;t.textContent=m.l.replace(/\s*\(gele ton\)/i,'').replace(/[‘’']/g,'')}
     else{const t=gm.querySelector(`text[data-key="${CSS.escape(key)}"]`);if(t)t.textContent=t.textContent.replace(/ ×\d+$/,'')+' ×'+seen[key]}
   });
+  {// vaarwaterboeien met vaste passeerkant: gestippeld label met de kant (beide richtingen in deze baan: kompaskant)
+   const sides={};legs.forEach(l=>{(l.wpf||[]).forEach((sd,j)=>{if(!sd)return;const w=l.wp[j];(sides[w]=sides[w]||new Set()).add(sd)})});
+   Object.keys(sides).forEach(w=>{const B=D.buoys.find(b=>b[0]===w);if(!B)return;const S2=[...sides[w]];const one=S2.length===1;
+     const bd=el('g',{class:'rbadge pass '+(one?sideCls(S2[0]):'wpn'),'data-s':1},gm);bd.dataset.x=B[1];bd.dataset.y=B[2];
+     const txt=one?'pass. '+S2[0]:'pass. '+{N:'noordkant',S:'zuidkant',E:'oostkant',W:'westkant'}[WP_PASS[w]];const wd=one?46:Math.round(txt.length*5.6+12);
+     el('rect',{x:-wd/2,y:12,width:wd,height:14,rx:7},bd);const tt=el('text',{x:0,y:22.2},bd);tt.textContent=txt;
+     el('title',{},bd).textContent=w+': geen baanmerk, '+(one?'aan '+(S2[0]==='SB'?'stuurboord':'bakboord')+' laten':'oostwaarts aan SB, westwaarts aan BB laten (langs de '+txt.slice(6)+')')})}
   curBox={x:minx,y:miny,w:maxx-minx,h:maxy-miny};
   const total=legs.reduce((s,l)=>s+l.nm,0);
   const flags=legs.filter(l=>l.flag).length;
@@ -889,7 +926,7 @@ function buildGpx(){
         if(i===0)o={name:`${ST.baan}-GATE`,desc:'Gate (0,5 nm in de wind)',sym:'Flag, Blue'};
         else if(m&&m.l==='Finish')o={name:`${ST.baan}-FINISH`,desc:'Finish (schematisch)',sym:'Flag, Red'};
         else o={name:`${String(i+1).padStart(2,'0')}-${shortName(l.t)}`.slice(0,15),desc:`Rak ${i+1}: ${l.t}${m&&m.s?' – '+(m.s==='SB'?'aan stuurboord houden':'aan bakboord houden'):''}`,sym:m&&m.s==='SB'?'Navaid, Green':'Navaid, Red',kind:m&&m.s?'mark':'fix',side:m&&m.s,buoy:m&&m.b};}
-      else{const w=l.wp&&l.wp[j];o={name:`${String(i+1).padStart(2,'0')}${String.fromCharCode(97+j-1)}-${w?shortName(w):'VW'}`.slice(0,15),desc:w?`langs ${w}${l.wps&&l.wps[j]?' aan '+(l.wps[j]==='SB'?'stuurboord':'bakboord')+' (checken bij palaver)':''} (vaarwater ${l.via.join(', ')})`:`vaarwater in (${l.via.join(', ')})`,kind:w?'turn':'fix',buoy:w}}
+      else{const w=l.wp&&l.wp[j];o={name:`${String(i+1).padStart(2,'0')}${String.fromCharCode(97+j-1)}-${w?shortName(w):'VW'}`.slice(0,15),desc:w?`langs ${w}${l.wpf&&l.wpf[j]?' aan '+(l.wpf[j]==='SB'?'stuurboord':'bakboord'):l.wps&&l.wps[j]?' aan '+(l.wps[j]==='SB'?'stuurboord':'bakboord')+' (checken bij palaver)':''} (vaarwater ${l.via.join(', ')})`:`vaarwater in (${l.via.join(', ')})`,kind:w?'turn':'fix',buoy:w}}
       if(sg)o.desc+=` | koers ${pad3(sg.mw)}m, ${sg.nm.toFixed(2)} nm, TWA ${Math.round(twaOf(sg.tw).a)}°`;
       add(l.p[j],o)}
   });
@@ -1036,7 +1073,7 @@ store.on(['wfOn','wfData'],()=>setTimeout(()=>{if(document.body.classList.contai
 try{WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});}catch(e){console.error('windveld',e)}
 store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
 
-window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));window.__pass=()=>CUR?(CUR.c.allMarks||CUR.c.marks).filter(m=>m.pass).map(m=>m.l):[];// voor tests
+window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));window.__legs=()=>CUR&&CUR.legs.map(l=>({p:l.p,wp:l.wp||null,wpf:l.wpf||null}));window.__pass=()=>CUR?(CUR.c.allMarks||CUR.c.marks).filter(m=>m.pass).map(m=>m.l):[];// voor tests
 var PRA=initAnalysis({store,llXY,xyLL,boats:BOATS,getLegs:()=>CUR&&CUR.legs,getMeta:()=>({baan:ST.baan,area:ST.area,boat:ST.boat}),
   getPolar:b=>(BOATS[b]||BOATS[ST.boat]).polar,getCtx:calcCtx,waterD:()=>$('water').getAttribute('d'),
   slotStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
