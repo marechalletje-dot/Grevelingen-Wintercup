@@ -59,14 +59,18 @@ export function avgWind(series, t0, t1) {
  * Simuleer de baan met wind die met de tijd verandert. legs = rakken van de app ({t, s:[{nm,tw}]}),
  * ctx = {polar, eff, tackS, gybeS}, start = ms. Per deelrak de wind op dat moment; manoeuvres per rak met de wind bij de start van het rak.
  */
-export function simulate(legs, ctx, series, start) {
+export function simulate(legs, ctx, series, start, windFn = null) {
+  // windFn(t, [x,y]) = wind op tijd en plaats (windveld); anders de puntverwachting op tijd t
+  const W = (t, xy) => (windFn && xy ? windFn(t, xy) : windAt(series, t));
   let t = start; const out = [];
   for (const l of legs) {
-    const w0 = windAt(series, t); const c0 = { ...ctx, twd: w0.twd, tws: w0.tws };
+    const P = l.p || [];
+    const w0 = W(t, P[0]); const c0 = { ...ctx, twd: w0.twd, tws: w0.tws };
     const copy = { ...l, s: l.s.map(x => ({ ...x })) }; countManoeuvres([copy], c0);
     const t0 = t; let first = null;
-    for (const sg of copy.s) {
-      const w = windAt(series, t); const a = twaOf(w.twd, sg.tw); const p = perf(ctx.polar, a.a, Math.max(4, w.tws), ctx.eff);
+    for (const [k, sg] of copy.s.entries()) {
+      const pa = P[k], pb = P[k + 1]; const mid = pa && pb ? [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2] : pa;
+      const w = W(t, mid); const a = twaOf(w.twd, sg.tw); const p = perf(ctx.polar, a.a, Math.max(4, w.tws), ctx.eff);
       if (!first) first = { twd: w.twd, tws: w.tws, twa: a.a, side: a.side, mode: p.mode, kn: p.vmc };
       t += sg.nm / Math.max(0.3, p.vmc) * 3600e3;
     }

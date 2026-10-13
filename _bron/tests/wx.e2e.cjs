@@ -5,17 +5,19 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
   const b = await chromium.launch();
   for (const [nm, opt] of [['desktop', { viewport: { width: 1300, height: 900 } }], ['iphone', devices['iPhone 13']]]) {
     const ctx = await b.newContext(opt); await ctx.route(/service\.pdok|fonts\./, r => r.abort());
-    let asked = null;
+    let asked = null, fieldAsked = false;
     await ctx.route(/api\.open-meteo\.com/, r => {
       asked = r.request().url(); const u = new URL(asked); const d = u.searchParams.get('start_date');
       const time = [...Array(24).keys()].map(h => `${d}T${String(h).padStart(2, '0')}:00`);
-      r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
-        body: JSON.stringify({ hourly: { time, wind_speed_10m: time.map((_, h) => h < 13 ? 16 : 12), wind_direction_10m: time.map(() => 290), wind_gusts_10m: time.map(() => 24) } }) });
+      const one = { hourly: { time, wind_speed_10m: time.map((_, h) => h < 13 ? 16 : 12), wind_direction_10m: time.map(() => 290), wind_gusts_10m: time.map(() => 24) } };
+      const n = u.searchParams.get('latitude').split(',').length; if (n > 1) fieldAsked = true;
+      r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(n > 1 ? Array(n).fill(one) : one) });
     });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE); await p.waitForSelector('#lpBody tr', { state: 'attached' }); await p.waitForTimeout(300);
     ok((await p.locator('#wxDay option').count()) >= 4, `${nm}: dagkeuze`);
     await p.evaluate(() => { document.getElementById('rWx').open = true; }); await p.click('#wxGet'); await p.waitForTimeout(500);
+    ok(fieldAsked, `${nm}: windveld meegehaald`);
     ok(asked && /models=(knmi_seamless|ecmwf_ifs025)/.test(asked) && /wind_speed_unit=kn/.test(asked), `${nm}: API-aanvraag met model en knopen`);
     ok(await p.isVisible('#wxOut') && (await p.locator('#wxBody tr').count()) === 9, `${nm}: uurtabel 09–17 (${await p.locator('#wxBody tr').count()})`);
     ok((await p.locator('#wxBody tr.race').count()) >= 2, `${nm}: race-uren gemarkeerd`);

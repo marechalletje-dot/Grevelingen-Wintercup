@@ -41,3 +41,10 @@ test('model kiezen en URL', () => {
   assert.equal(pickModel('auto', '2026-10-11', now), 'knmi_seamless'); assert.equal(pickModel('auto', '2026-10-20', now), 'ecmwf_ifs025'); assert.equal(pickModel('icon_seamless', '2026-10-11', now), 'icon_seamless');
   const u = forecastUrl('knmi_seamless', '2026-10-11'); assert.match(u, /^https:\/\/api\.open-meteo\.com\/v1\/forecast\?/); assert.match(u, /wind_speed_unit=kn/); assert.match(u, /start_date=2026-10-11/);
 });
+test('simulate: windveld per plaats wordt gebruikt', () => {
+  const legs = [{ t: 'A', p: [[0, 0], [0, -3]], s: [{ nm: 3, tw: 0 }] }]; const ctx = { polar: POLAR_DM, eff: 100, tackS: 12, gybeS: 15 };
+  const ser = [{ t: T(10), twd: 270, tws: 6 }];
+  const slow = simulate(legs, ctx, ser, T(11)).hours;
+  const fast = simulate(legs, ctx, ser, T(11), () => ({ twd: 270, tws: 14 })).hours;
+  assert.ok(fast < slow); assert.equal(simulate(legs, ctx, ser, T(11), () => ({ twd: 270, tws: 6 })).hours, slow);
+});

@@ -14,6 +14,7 @@ import { initPanels } from './ui/panels.js';
 import { initRegels } from './ui/regels.js';
 import { initUitslagen } from './ui/uitslagen.js';
 import { initWx } from './ui/wx.js';
+import { initWxField } from './ui/wxfield.js';
 import { slotTimes } from './core/startseq.js';
 
 const D=window.__D;
@@ -112,7 +113,8 @@ function freeArea(){const r=svg.getBoundingClientRect();const A={x:0,y:0,w:r.wid
   if(!document.body.classList.contains('maponly'))return A;const h=$('gpsHud');if(!h||h.hidden||!h.offsetWidth)return A;
   const H=h.getBoundingClientRect(),g=8;const t=document.querySelector('.tools');const T=t&&t.offsetWidth?t.getBoundingClientRect():null;
   const hr=H.right-r.left+g,hb=H.bottom-r.top+g,tl=T?T.left-r.left-g:r.width,tb=T?T.bottom-r.top+g:0;
-  return [{x:hr,y:0,w:Math.max(1,tl-hr),h:r.height},{x:0,y:Math.max(hb,tb),w:r.width,h:Math.max(1,r.height-Math.max(hb,tb))}]}
+  const wb=$('wfBar');const bot=wb&&!wb.hidden&&wb.offsetHeight?wb.getBoundingClientRect().top-r.top-g:r.height;// windveld-balk onderin
+  return [{x:hr,y:0,w:Math.max(1,tl-hr),h:Math.max(1,bot)},{x:0,y:Math.max(hb,tb),w:r.width,h:Math.max(1,bot-Math.max(hb,tb))}]}
 function fitTo(b,pad=0.12){const r=svg.getBoundingClientRect();const ar=r.width/r.height;let w=b.w*(1+pad*2),h=b.h*(1+pad*2);
   const F=freeArea();if(Array.isArray(F)){// beste deelgebied: grootste schaal
     {const q=Math.max(pad,0.2);b={...b,w:b.w*1.12};w=b.w*(1+q*2);h=b.h*(1+q*2)}// ruimte voor boeinamen (die staan rechts van de boei)
@@ -649,7 +651,7 @@ function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.
   const pts=[],tws=[];CUR.legs.forEach(l=>l.p.forEach((q,j)=>{if(!pts.length||j>0){pts.push(q);if(j>0)tws.push(l.s[j-1]?l.s[j-1].tw:brgT(l.p[j-1],q))}}));
   const DW=(typeof WXU!=='undefined'&&WXU.demoWind)?WXU.demoWind():null;
   const DT=1;let seg=0,t=0,simT=DW?DW.start:Date.now();
-  const windNow=()=>DW?DW.at(simT):{twd:ST.twd,tws:ST.tws};
+  let curXY=pts[0];const windNow=()=>DW?DW.at(simT,curXY):{twd:ST.twd,tws:ST.tws};
   const knAt=i=>{const w=windNow();const p=corePerf(BOATS[ST.boat].polar,navTwaOf(w.twd,tws[Math.min(i,tws.length-1)]).a,Math.max(4,w.tws),ST.eff);return Math.max(0.5,p.vmc)};
   $('gMsg').textContent=DW?`Proefvaart met verwachte wind vanaf ${new Date(simT).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}; snelheid uit de polar.`:'Proefvaart met de ingestelde wind; snelheid uit de polar.';
   const toLLd=(x,y)=>[-y/60+51.74,x/(Math.cos(51.74*Math.PI/180)*60)+3.95];
@@ -657,7 +659,7 @@ function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.
   G.demoTimer=setInterval(()=>{const SPEED=demoSpd();const KN=knAt(seg);let step=KN*SPEED*DT/3600;
     while(step>0&&seg<pts.length-1){const a=pts[seg],b=pts[seg+1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const left=L*(1-t);if(step<left){t+=step/L;step=0}else{step-=left;seg++;t=0}}
     if(seg>=pts.length-1){demoStop();$('gMsg').textContent='Proefvaart klaar: finish bereikt.';return}
-    const a=pts[seg],b=pts[seg+1];const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;const [la,lo]=toLLd(x,y);simT+=DT*1000*SPEED;
+    const a=pts[seg],b=pts[seg+1];const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;curXY=[x,y];const [la,lo]=toLLd(x,y);simT+=DT*1000*SPEED;if(DW)try{WF.setTime(simT)}catch(e){}
     gpsFix({timestamp:simT,coords:{latitude:la,longitude:lo,accuracy:5,speed:KN/1.943844,heading:brgT(a,b)}});
     if(DW){const w=windNow();$('gMsg').textContent=`Proefvaart ${new Date(simT).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})} · verwachte wind ${String(w.twd).padStart(3,'0')}° ${Math.round(w.tws)} kn · ${KN.toFixed(1)} kn`}},DT*1000)}
 function demoStop(){clearInterval(G.demoTimer);G.demoTimer=null;G.demo=false;$('gDemo').setAttribute('aria-pressed','false')}
@@ -963,9 +965,14 @@ $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlM
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
 initUitslagen({store});
-var WXU=initWx({store,getLegs:()=>CUR&&CUR.legs,getCtx:calcCtx,
+var WF=initWxField({store,svg,llXY,xyLL,getK:()=>K,getDay:()=>($('wxDay')&&$('wxDay').value)||'',
+  getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
+  isWater:(x,y)=>{try{return $('water').isPointInFill(new DOMPoint(x,y))}catch(e){return true}}});
+var WXU=initWx({store,getFieldFn:d=>WF.windFn(d),onField:d=>WF.setData(d),getLegs:()=>CUR&&CUR.legs,getCtx:calcCtx,
   getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   applyWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}});
+store.on(['wfOn','wfData'],()=>setTimeout(()=>{if(document.body.classList.contains('maponly')){try{if(LV.i>=0)fitLeg();else fitTo(curBox)}catch(e){}}},60));
+WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});
 store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
 
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});

@@ -1,5 +1,6 @@
 // Vak "Windverwachting" (tab Banenkaart): modelverwachting ophalen, uurtabel, gemiddelde wind tijdens de race en racesimulatie.
 import { MODELS, pickModel, forecastUrl, parseForecast, windAt, avgWind, simulate } from '../core/wx.js';
+import { fieldUrl, parseField } from '../core/wxfield.js';
 import { RACES } from '../data/results.js';
 import { wname } from '../core/nav.js';
 
@@ -12,7 +13,7 @@ const dlabel = s => { const [y, m, d] = s.split('-').map(Number); const D = new 
 const arrow = twd => `<span class="wxarr" style="transform:rotate(${twd}deg)" aria-hidden="true">↓</span>`;
 const fmtH = h => { const s = Math.round(h * 3600); return `${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
 
-export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange = () => {} }) {
+export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange = () => {}, getFieldFn = () => null, onField = () => {} }) {
   const $ = id => document.getElementById(id);
   if (!$('wxGet')) return { series: () => null, demoWind: () => null };
   let WX = store.state.wxData && store.state.wxData.series ? store.state.wxData : null;
@@ -36,16 +37,21 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
   async function fetchWx() {
     const d = day(); const model = pickModel($('wxModel').value, d); const url = forecastUrl(model, d);
     $('wxInfo').textContent = 'Verwachting ophalen…'; $('wxGet').disabled = true;
+    const getJ = async u => { const r = await fetch(u); const j = await r.json(); if (!r.ok || (j && j.error)) throw new Error((j && j.reason) || ('HTTP ' + r.status)); return j; };
+    // puntverwachting en windveld (raster) tegelijk; het windveld is optioneel
+    const [pt, fl] = await Promise.allSettled([getJ(url), getJ(fieldUrl(model, d))]);
+    let fieldErr = null;
+    if (fl.status === 'fulfilled') { try { onField({ day: d, model, fetched: Date.now(), field: parseField(fl.value) }); } catch (e) { fieldErr = e.message; } } else fieldErr = fl.reason && fl.reason.message;
     try {
-      const r = await fetch(url); const j = await r.json(); if (!r.ok || j.error) throw new Error(j.reason || ('HTTP ' + r.status));
-      const series = parseForecast(j);
-      WX = { day: d, model, fetched: Date.now(), series };
+      if (pt.status !== 'fulfilled') throw pt.reason;
+      WX = { day: d, model, fetched: Date.now(), series: parseForecast(pt.value) };
       store.set({ wxData: WX });
     } catch (e) {
       $('wxInfo').textContent = `Ophalen mislukt (${e.message}). Probeer een ander model of controleer de internetverbinding.`;
       $('wxGet').disabled = false; return;
     }
     $('wxGet').disabled = false; render();
+    if (fieldErr) $('wxInfo').textContent += ` · windveld niet opgehaald (${fieldErr})`;
   }
   function render() {
     SIM = null;
@@ -54,7 +60,8 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
     if (!ok) { $('wxInfo').textContent = WX ? `Opgeslagen verwachting is voor ${dlabel(WX.day)}; haal de verwachting voor deze dag op.` : 'Nog geen verwachting opgehaald.'; onChange(); return; }
     const start = getStart(WX.day); const legs = getLegs();
     let end = start + 3 * 3600e3;
-    if (legs && legs.length) { SIM = simulate(legs, getCtx(), WX.series, start); end = SIM.finish; }
+    const FF = getFieldFn(WX.day);
+    if (legs && legs.length) { SIM = simulate(legs, getCtx(), WX.series, start, FF); SIM.field = !!FF; end = SIM.finish; }
     const A = avgWind(WX.series, start, end);
     $('wxInfo').innerHTML = `${esc(MODELS[WX.model] || WX.model)} · opgehaald ${new Date(WX.fetched).toLocaleString('nl-NL', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`;
     const rows = WX.series.filter(s => s.h >= 9 && s.h <= 17);
@@ -66,7 +73,7 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
   function renderSim() {
     if (!SIM) return;
     $('wxSimBox').hidden = false;
-    $('wxSimHead').textContent = `Start ${hm(SIM.start)} · finish ${hm(SIM.finish)} · zeiltijd ${fmtH(SIM.hours)}`;
+    $('wxSimHead').textContent = `Start ${hm(SIM.start)} · finish ${hm(SIM.finish)} · zeiltijd ${fmtH(SIM.hours)}${SIM.field ? ' · wind per rak uit het windveld' : ''}`;
     $('wxSimBody').innerHTML = SIM.legs.map((l, i) => `<tr><td>${i + 1}</td><td>${esc(l.to)}</td><td class="num">${hm(l.start)}</td><td>${String(l.twd).padStart(3, '0')}° ${Math.round(l.tws)} kn</td><td class="num">${Math.round(l.twa)}° ${l.side}</td><td class="num">${l.kn.toFixed(1)}</td><td class="num">${fmtH((l.end - l.start) / 3600e3)}</td></tr>`).join('');
   }
   $('wxGet').onclick = fetchWx;
@@ -80,6 +87,12 @@ export function initWx({ store, getLegs, getCtx, getStart, applyWind, onChange =
     refresh: () => { if (WX && WX.day === day()) { const vis = !$('wxSimBox').hidden; render(); if (vis) renderSim(); } },
     series: () => (WX && WX.day === day() ? WX.series : null),
     // wind voor de proefvaart: {start (ms), at(t)} of null
-    demoWind: () => (store.state.wxDemo && WX && WX.day === day() ? { start: getStart(WX.day), at: t => windAt(WX.series, t) } : null),
+    // at(t, [x,y]): windveld op die plek als dat er is, anders de puntverwachting
+    demoWind: () => {
+      if (!store.state.wxDemo) return null; const d = day(); const FF = getFieldFn(d); const hasP = WX && WX.day === d;
+      if (!hasP && !FF) return null;
+      return { start: getStart(d), at: (t, xy) => (FF && (xy || !hasP) ? FF(t, xy || [0, 0]) : windAt(WX.series, t)) };
+    },
+    fetch: fetchWx, day,
   };
 }
