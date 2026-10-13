@@ -18,7 +18,7 @@ import { initWxField } from './ui/wxfield.js';
 import { initAnalysis, recordFix, savePreSim } from './ui/analysis.js';
 import { slotTimes } from './core/startseq.js';
 import { beatAngle, gybeAngle, laylines, gateFromLine } from './core/layline.js';
-import { cutPassMarks } from './core/passmarks.js';
+import { cutPassMarks, mergePassLegs } from './core/passmarks.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -293,7 +293,7 @@ function twaHtml(tw){const t=twaOf(tw);return `<span class="twa ${t.side.toLower
 let SG_SRC={start:'berekend',gate:'berekend'};
 function windInd(){const a=$('wiArrow');if(!a)return;a.setAttribute('transform',`rotate(${ST.twd%360})`);$('wiTxt').textContent=`${pad3(ST.twd)} · ${ST.tws} kn`}
 function show(fit){
-  const c=D.courses[ST.baan];const wk=String((Math.round(ST.twd/5)*5)%360);
+  let c=D.courses[ST.baan];const wk=String((Math.round(ST.twd/5)*5)%360);
   if(!c.pair.includes(ST.area))ST.area=c.pair[0];
   let S=D.starts[ST.area+'|'+wk];let FIRST=D.first[ST.area+'|'+wk+'|'+c.fk];
   let BEAT={p:[S.start,S.gate],s:[{nm:0.5,tw:+wk,mw:((+wk-D.decl)%360+360)%360}],nm:0.5,flag:S.frac<0.999?`kruisrak niet overal ≥ ${D.mind} m (${Math.round(S.frac*100)}% van de strook)`:''};
@@ -319,6 +319,8 @@ function show(fit){
   // merktekens die je alleen aan een kant laat liggen (merk buiten de bocht): kortste weg naar het volgende rondingsmerk
   c.marks.forEach(m=>{delete m.pass});
   try{cutPassMarks(legs,c.marks,{clear:segClear,freeIn:(i,j)=>!(legs[i].wp&&legs[i].wp[j])}).forEach(k=>{c.marks[k].pass=true});legSegs(legs)}catch(e){console.error('passeermerken',e)}
+  // rakken die alleen door passeermerken/vaarwaterboeien gescheiden zijn: samenvoegen tot één rak naar het volgende rondingsmerk
+  try{const MG=mergePassLegs(legs,c.marks);legs.splice(0,legs.length,...MG.legs);c=Object.assign({},c,{marks:MG.marks,allMarks:c.marks})}catch(e){console.error('samenvoegen',e)}
   countManoeuvres(legs);
   // fairway corridors used
   const used=[...new Set(legs.flatMap(l=>l.via))];
@@ -378,7 +380,7 @@ function show(fit){
    el('circle',{class:'fbuoy','data-r':4.5,cx:bx,cy:by},gm);
    const g2=el('g',{class:'mk'},gm);const t=el('text',{class:'lab'},g2);t.dataset.x=bx;t.dataset.y=by;t.textContent='Finish'}
   const seen={};
-  c.marks.forEach((m)=>{
+  (c.allMarks||c.marks).forEach((m)=>{
     if(m.l==='Finish')return;
     const g2=el('g',{class:'mk'},gm);
     el('circle',{class:'ring '+sideCls(m.s)+(m.auto||m.pass?' passring':''),'data-r':9,cx:m.x,cy:m.y},g2);if(m.auto||m.pass)el('title',{},g2).textContent=m.auto?PASS_T:PASS_M;
@@ -946,7 +948,8 @@ function drawLaylines(){if(!CUR)return;const g0=$('course');let lg=document.getE
      return L};
    LAYL_LEG=NAV.leg;
    if(race){const i=NAV.leg,l=legs[i];
-     if(l&&!(gd&&i===0)){const q=l.p[l.p.length-1],sg=l.s[l.s.length-1];const twa=sg?navTwaOf(ST.twd,sg.tw).a:null;const len=Math.max(0.5,Math.min(1.5,(i===0?gLen:l.nm)*1.3));
+     const mkI=i===0?null:CUR.c.marks[i-1];const rounds=i===0||(mkI&&mkI.s&&mkI.b!=null&&!mkI.pass&&!mkI.auto);
+     if(l&&rounds&&!(gd&&i===0)){const q=l.p[l.p.length-1],sg=l.s[l.s.length-1];const twa=sg?navTwaOf(ST.twd,sg.tw).a:null;const len=Math.max(0.5,Math.min(1.5,(i===0?gLen:l.nm)*1.3));
        if(twa!=null&&twa<ba+8)draw(q,ba,len,'up');else if(twa!=null&&twa>ga-8)draw(q,ga,len,'dn')}
      if(gd)draw(S.gate,ba,Math.max(0.6,gLen*1.3),'up')}
    const gl=laylines(S.gate,ST.twd,ba,1);
@@ -1033,7 +1036,7 @@ store.on(['wfOn','wfData'],()=>setTimeout(()=>{if(document.body.classList.contai
 try{WF.setFetcher(()=>{const r=$('rWx');if(r&&r.tagName==='DETAILS'&&!r.open)r.open=true;WXU.fetch()});}catch(e){console.error('windveld',e)}
 store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTimeout(()=>{try{WXU.refresh&&WXU.refresh()}catch(e){}},0));
 
-window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));window.__pass=()=>CUR?CUR.c.marks.filter(m=>m.pass).map(m=>m.l):[];// voor tests
+window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));window.__pass=()=>CUR?(CUR.c.allMarks||CUR.c.marks).filter(m=>m.pass).map(m=>m.l):[];// voor tests
 var PRA=initAnalysis({store,llXY,xyLL,boats:BOATS,getLegs:()=>CUR&&CUR.legs,getMeta:()=>({baan:ST.baan,area:ST.area,boat:ST.boat}),
   getPolar:b=>(BOATS[b]||BOATS[ST.boat]).polar,getCtx:calcCtx,waterD:()=>$('water').getAttribute('d'),
   slotStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},

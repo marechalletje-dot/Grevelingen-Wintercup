@@ -41,3 +41,26 @@ export function cutPassMarks(legs, marks, { clear = () => true, freeIn = () => t
   }
   return passed;
 }
+
+/**
+ * Rakken die alleen door een passeermerk (m.pass) of vaarwaterboei (m.auto) gescheiden zijn, samenvoegen tot één rak
+ * naar het volgende merk dat wel gerond wordt. Geeft {legs, marks} terug (nieuwe arrays; de rakobjecten worden samengevoegd).
+ */
+export function mergePassLegs(legs, marks) {
+  const L = legs.slice(), M = marks.slice();
+  for (let i = L.length - 2; i >= 1; i--) {
+    const m = M[i - 1]; if (!m || !(m.pass || m.auto)) continue;
+    const a = L[i], b = L[i + 1];
+    const wpA = (a.wp ? a.wp.slice() : a.p.map(() => null)); wpA[wpA.length - 1] = `${m.l} (pass. ${m.s})`;
+    const wpB = b.wp ? b.wp.slice() : b.p.map(() => null);
+    const wpsA = a.wps ? a.wps.slice() : a.p.map(() => null), wpsB = b.wps ? b.wps.slice() : b.p.map(() => null);
+    const via = [...a.via || []]; (b.via || []).forEach(v => { if (!via.includes(v)) via.push(v); });
+    L[i] = Object.assign({}, a, {
+      t: b.t, p: a.p.concat(b.p.slice(1)), s: (a.s || []).concat(b.s || []), nm: +((a.nm || 0) + (b.nm || 0)).toFixed(2), via,
+      flag: [a.flag, b.flag].filter(Boolean).join('; '), wp: wpA.concat(wpB.slice(1)), wps: wpsA.concat(wpsB.slice(1)),
+      passes: (a.passes || []).concat([{ l: m.l, s: m.s, auto: !!m.auto }], b.passes || []),
+    });
+    L.splice(i + 1, 1); M.splice(i - 1, 1);
+  }
+  return { legs: L, marks: M };
+}

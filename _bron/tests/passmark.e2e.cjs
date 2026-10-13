@@ -7,13 +7,13 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
   await p.goto(BASE); await p.waitForSelector('#lpBody tr', { state: 'attached' });
   await p.evaluate(() => { window.__store.set({ allC: true, twd: 270, area: 'B' }); document.getElementById('c54').click(); }); await p.waitForTimeout(300);
   ok((await p.evaluate(() => window.__pass())).includes('SP 40'), 'baan 54: SP 40 is passeermerk');
-  const row = await p.locator('#lpBody tr[data-i="1"]:not(.subrow)').innerText(); ok(/passeren SB/.test(row) && /niet ronden/.test(row), 'rakkentabel: passeren SB, niet ronden');
-  const geo = await p.evaluate(() => { const L = window.__course(); const R = Math.PI / 180;
-    const brg = (a, b) => ((Math.atan2((b[1] - a[1]) * Math.cos(a[0] * R), b[0] - a[0]) / R) + 360) % 360;
-    const l2 = L[1], l3 = L[2]; return { n2: l2.length, b2: brg(l2[0], l2[l2.length - 1]), b3: brg(l3[0], l3[l3.length - 1]) }; });
-  ok(geo.n2 === 2 && Math.abs(geo.b2 - geo.b3) < 3, `rak 2 en 3 in één rechte lijn (${geo.b2.toFixed(0)}° / ${geo.b3.toFixed(0)}°)`);
-  // een echt rondingsmerk blijft gerond (G37/PG2 op baan 54)
-  const row5 = await p.locator('#lpBody tr[data-i="3"]:not(.subrow)').innerText(); ok(!/passeren/.test(row5), 'G37/PG2 blijft rondingsmerk');
+  const row = await p.locator('#lpBody tr[data-i="1"]:not(.subrow)').innerText(); ok(/HG 1/.test(row) && !/SP 40/.test(row.split('\n')[1] || ''), 'rak 2 loopt direct naar HG 1 (SP 40 samengevoegd): ' + row.replace(/\s+/g, ' '));
+  const sub = await p.locator('#lpBody tr.subrow[data-p="1"]').allInnerTexts(); ok(sub.some(t => /SP 40 \(pass\. SB\)/.test(t)), 'deelrak: langs SP 40 (pass. SB)');
+  ok(await p.evaluate(() => !!document.querySelector('.rbadge.pass')), 'SP 40 op de kaart met label pass. SB');
+  const n54 = await p.locator('#lpBody tr:not(.subrow)').count(); ok(n54 === 9, `baan 54: 9 rakken (was 10) → ${n54}`);
+  // baan 64: gate → SP 40 → HG 1 → G60/RB13 wordt één rak; laylines alleen bij rondingsmerk
+  await p.evaluate(() => { document.getElementById('c64').click(); }); await p.waitForTimeout(300);
+  const r64 = await p.locator('#lpBody tr[data-i="1"]:not(.subrow)').innerText(); ok(/G60\/RB13/.test(r64), 'baan 64: rak 2 naar G60/RB13: ' + r64.replace(/\s+/g, ' '));
   ok(errs.length === 0, 'geen JS-fouten ' + errs.join(';'));
   await b.close(); console.log(fails ? fails + ' FOUT(EN)' : 'alles ok'); process.exit(fails ? 1 : 0);
 })();
