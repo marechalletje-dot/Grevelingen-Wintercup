@@ -35,11 +35,11 @@ const order = (p, sel) => p.evaluate(s => [...document.querySelector(s).children
     // v41: rakkenpaneel onder de kaart, even breed als de kaart
     { const ch = await p.locator('#chart').boundingBox(), lp = await p.locator('#legsPanel').boundingBox();
       ok(lp.y >= ch.y + ch.height - 1 && Math.abs(lp.x - ch.x) < 2 && Math.abs(lp.width - ch.width) < 2, `rakkenpaneel onder de kaart en uitgelijnd (kaart ${Math.round(ch.x)}/${Math.round(ch.width)} · paneel ${Math.round(lp.x)}/${Math.round(lp.width)})`);
-      const lg = await p.locator('[data-pid="rakken"]').boundingBox(); ok(Math.abs(lg.x - ch.x) < 2, `rakkentabel uitgelijnd met kaart (${Math.round(lg.x)} / ${Math.round(ch.x)})`); }
+      ok(!(await p.isVisible('#tabKaart > .log')), 'v51: tweede rakkentabel onderaan verborgen');
+      ok(await p.locator('table:visible').count() === 1, 'v51: maar één rakkentabel zichtbaar'); }
     // schermvullend
-    await p.click('[data-pid="rakken"] .pmaxb'); const mx = await p.locator('[data-pid="rakken"]').boundingBox();
+    await p.click('[data-pid="rakpnl"] .pmaxb'); const mx = await p.locator('[data-pid="rakpnl"]').boundingBox();
     ok(mx.width > 1300 && mx.height > 800, 'rakkentabel schermvullend'); await p.keyboard.press('Escape');
-    ok((await p.locator('[data-pid="rakken"]').boundingBox()).height < 800 || true, 'Esc sluit schermvullend');
     await p.click('[data-pid="kaart"] > .pbar .pmaxb'); const mk = await p.locator('#map').boundingBox(); ok(mk.height > 780, 'kaart schermvullend'); await p.keyboard.press('Escape');
     await p.screenshot({ path: '/tmp/claude-0/-home-claude/09957d1d-b54b-5037-9ebe-4041ba2182de/scratchpad/pn_desk.png' });
     // bewaren

@@ -12,7 +12,6 @@ export const PANELS = [
   { id: 'legenda', sel: '#legendBox',        title: 'Legenda en lagen', mobileClosed: true },
   { id: 'export',  sel: '.rail > .r-actions', title: 'Export' },
   { id: 'kaart',   sel: '#chart',            title: 'Kaart', chart: true, wrap: true },
-  { id: 'rakken',  sel: '#tabKaart > .log',  title: 'Rakken (tabel)' },
   { id: 'rakpnl',  sel: '#legsPanel',        title: 'Rakken', noCollapse: true },
   { id: 'hud',     sel: '#gpsHud',           title: 'GPS', keep: '#gCdBox' },
   { id: 'legpop',  sel: '#legPop',           title: 'Legenda', noCollapse: true },
