@@ -23,6 +23,7 @@ import { shortestLeg, parseRings } from './core/shortpath.js';
 import { aboardList, advise, sailsFor, setCustomSails } from './core/sails.js';
 import { validPolar } from './core/polarfile.js';
 import { initBoat } from './ui/boat.js';
+import { initBoekje } from './ui/boekje.js';
 import { initInstruments } from './ui/instruments.js';
 
 const D=window.__D;
@@ -678,6 +679,7 @@ $('finBtn').onclick=()=>{if(!RACE.start)return;RACE.fin=Date.now();saveRace();$(
 setInterval(raceTick,250);
 function raceMode(on){document.body.classList.toggle('race',on);try{PANELS&&PANELS.apply()}catch(e){}try{applyVB()}catch(e){}}
 $('toBoot').onclick=()=>setTab('Boot');
+$('toBoekje').onclick=()=>{setTab('Boekje');setTimeout(()=>{try{$('tabBoekje').scrollIntoView({block:'start'})}catch(e){}},30)};
 $('raceBtn').onclick=()=>{setTab('Race');setTimeout(()=>{$('chart').scrollIntoView({block:'start'})},50)};
 function rbSync(){$('rbTwdR').value=Math.round(ST.twd/5)*5%360;$('rbTwd').textContent=pad3(ST.twd);$('rbTwsR').value=ST.tws;$('rbTws').textContent=ST.tws+' kn';$('rbEffR').value=ST.eff;$('rbEff').textContent=ST.eff+'%';$('rbSig5').value=RACE.start?new Date(RACE.start-300000).toTimeString().slice(0,8):''}
 $('rbEffR').addEventListener('input',e=>{$('rbEff').textContent=e.target.value+'%'});
@@ -1012,7 +1014,7 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);try{drawLaylines()}catch(e){}
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
@@ -1139,6 +1141,7 @@ var INS;try{INS=initInstruments({store,decl:D.decl,perf:(twa,tws)=>corePerf(pola
   curLeg:()=>(G.on?NAV.leg:-1),gpsOn:()=>G.on&&!G.demo,onFix:p=>{try{gpsFix(p)}catch(e){console.error(e)}},isRace:()=>ST.tab==='Race',
   setWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}})}catch(e){console.error('instrumenten',e)}
 store.on(['sailsAboard','boat'],()=>setTimeout(()=>{try{show(false)}catch(e){}},0));
+var BOEKJE;try{BOEKJE=initBoekje({store})}catch(e){console.error('banenboekje',e)}
 var BOAT;try{BOAT=initBoat({store,boats:BOATS,selectBoat:b=>{if(!BOATS[b]||b===ST.boat)return;$('boatSel').value=b;$('boatSel').onchange({target:$('boatSel')})}})}catch(e){console.error('boot',e)}
 // eigen polar of chart gewijzigd (tab Boot): rakkentabel, zeiladvies, laylines en simulatie opnieuw
 store.on(['polarCustom','sailChart'],()=>setTimeout(()=>{try{show(false)}catch(e){}try{INS&&INS.refresh()}catch(e){}try{WXU.refresh&&WXU.refresh()}catch(e){}try{$('polSrc').textContent=(ST.polarCustom||{})[ST.boat]?'eigen polar ('+ST.polarCustom[ST.boat].name+')':BOATS[ST.boat].polarSrc}catch(e){}},0));

@@ -22,16 +22,24 @@ esc = lambda s: s.replace('</script', '<\\/script')
 # ---------- artifact: alles in één bestand ----------
 import base64
 img_a = dict(img, href='data:image/jpeg;base64,' + base64.b64encode(aerial).decode())
-art = title + head_css + html + '<script>window.__D=' + data_raw + ';window.__IMG=' + json.dumps(img_a) + ';</script>\n<script>' + esc(bundle) + '</script>\n'
+art = title + head_css + html + '<script>window.__D=' + data_raw + ';window.__IMG=' + json.dumps(img_a) + ';window.__BOEKJE=null;</script>\n<script>' + esc(bundle) + '</script>\n'
 open(R + 'dist/artifact.html', 'w', encoding='utf-8').write(art)
 
 # ---------- GitHub Pages ----------
 out = R + 'dist/github/'; os.makedirs(out, exist_ok=True)
-for f in os.listdir(out): os.remove(out + f)
+shutil.rmtree(out); os.makedirs(out)
 def put(name, ext, b): fn = f'{name}.{H(b)}.{ext}'; open(out + fn, 'wb').write(b); return fn
 aer = put('aerial', 'jpg', aerial)
 data = put('data', 'json', data_raw.encode())
-app = put('app', 'js', ('window.__IMG=' + json.dumps(dict(img, href=aer)) + ';\n' + bundle).encode())
+# banenboekje (v54): pagina's als afbeelding + originele PDF, met hash in de naam (cache per versie)
+BK = json.load(open(R + 'assets/boekje/index.json', encoding='utf-8')); os.makedirs(out + 'boekje')
+def putb(fn):
+    b = open(R + 'assets/boekje/' + fn, 'rb').read(); stem, ext = fn.rsplit('.', 1); n = f'boekje/{stem}.{H(b)}.{ext}'
+    open(out + n, 'wb').write(b); return n
+BK['pdf'] = putb('banenboekje-2026-2027.pdf')
+for pg in BK['pages']: pg['src'] = putb('p%02d.jpg' % pg['n'])
+BK_FILES = [BK['pdf']] + [pg['src'] for pg in BK['pages']]
+app = put('app', 'js', ('window.__IMG=' + json.dumps(dict(img, href=aer)) + ';window.__BOEKJE=' + json.dumps(BK, ensure_ascii=False) + ';\n' + bundle).encode())
 shutil.copy(R + 'assets/jspdf.umd.min.js', out + 'jspdf.umd.min.js')
 for f in ['manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']: shutil.copy(R + 'assets/' + f, out + f)
 PWA = ('<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="apple-touch-icon.png?v=' + H(open(R + 'assets/apple-touch-icon.png', 'rb').read()) + '">\n'
@@ -68,7 +76,7 @@ doc = (f'<!doctype html>\n<html lang="nl" data-build="{BUILD}">'+'\n<head>\n<met
  + PWA + title + head_css + '\n</head>\n<body>\n' + html + BOOT + '</body>\n</html>\n')
 open(out + 'index.html', 'w', encoding='utf-8').write(doc)
 ver = H((doc + app + data + aer).encode())
-sw = open(R + 'src/sw_tpl.js', encoding='utf-8').read().replace('__VER__', ver).replace('__ASSETS__', json.dumps([app, data, aer, 'jspdf.umd.min.js']))
+sw = open(R + 'src/sw_tpl.js', encoding='utf-8').read().replace('__VER__', ver).replace('__ASSETS__', json.dumps([app, data, aer, 'jspdf.umd.min.js'] + BK_FILES))
 open(out + 'sw.js', 'w', encoding='utf-8').write(sw)
 print('artifact', os.path.getsize(R + 'dist/artifact.html'))
-for f in sorted(os.listdir(out)): print(' ', f, os.path.getsize(out + f))
+for f in sorted(os.listdir(out)): print(' ', f, os.path.getsize(out + f) if os.path.isfile(out + f) else '(map)')

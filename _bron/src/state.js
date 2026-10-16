@@ -15,7 +15,7 @@ export const SCHEMA = {
   area:    { def: 'B', key: 'wc_area', fix: v => (v && 'ABCD'.includes(v) && v.length === 1 ? v : undefined) },
   allC:    { def: false },
   mapStyle:{ def: 'chart', key: 'wc_style2', fix: v => (['chart','dim','photo','night'].includes(v) ? v : undefined) },
-  tab:     { def: 'Kaart', key: 'wc_tab', fix: v => (['Kaart','Race','Boot','Analyse','Deeln','Uitslag','Regels','Uitleg'].includes(v) ? v : undefined) },
+  tab:     { def: 'Kaart', key: 'wc_tab', fix: v => (['Kaart','Race','Boot','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].includes(v) ? v : undefined) },
   voice:   { def: true, key: 'wc_voice', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   demoSpd: { def: 10, key: 'wc_demospd', fix: v => (+v === 10 || +v === 60 ? +v : undefined) },
   race:    { def: { start: null, fin: null }, key: 'wc_race', json: true,

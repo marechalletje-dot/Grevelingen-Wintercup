@@ -1,12 +1,12 @@
 // Wintercup banenkaart - service worker.
 // index.html: altijd eerst vers van het netwerk. App, kaartdata, luchtfoto en PDF-module hebben een vaste naam per versie
 // en worden maar één keer gedownload en daarna uit de cache gebruikt. Kaarttegels (PDOK) worden bewaard zodra ze bekeken zijn.
-const VER = '5baed102';
+const VER = 'd57b6461';
 const CACHE = 'wintercup-' + VER;
 const ASSETS_CACHE = 'wintercup-assets';
 const TILES = 'wintercup-tiles';
 const MAX_TILES = 4000;
-const ASSETS = ["app.1a983ab7.js", "data.55e8fe2b.json", "aerial.45820b3e.jpg", "jspdf.umd.min.js"];
+const ASSETS = ["app.1ff20afc.js", "data.55e8fe2b.json", "aerial.45820b3e.jpg", "jspdf.umd.min.js", "boekje/banenboekje-2026-2027.635aba99.pdf", "boekje/p15.b536c807.jpg", "boekje/p16.2da2edca.jpg", "boekje/p17.534fdf50.jpg", "boekje/p18.4dca8521.jpg", "boekje/p19.e72f3d74.jpg", "boekje/p20.5b2f4a97.jpg", "boekje/p21.8529a4ab.jpg", "boekje/p22.5b10a45b.jpg", "boekje/p23.f2f64764.jpg", "boekje/p24.5acdb6cc.jpg", "boekje/p25.c9c54323.jpg", "boekje/p26.d2c5a47e.jpg", "boekje/p27.6a1a0126.jpg", "boekje/p28.a1b60898.jpg", "boekje/p29.725faf3b.jpg"];
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 const isAsset = p => ASSETS.some(a => p.endsWith('/' + a));
 self.addEventListener('install', e => {

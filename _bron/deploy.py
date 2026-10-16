@@ -14,12 +14,22 @@ def run(cmd, cwd=ROOT): r = subprocess.run(cmd, shell=True, cwd=cwd); r.returnco
 prev = set()
 if os.path.exists(os.path.join(ROOT, 'index.html')):
     prev = set(re.findall(r'(?:app|data|aerial)\.[0-9a-f]{8}\.(?:js|json|jpg)', open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()))
+prevb = set()   # banenboekje-bestanden van de vorige versie (staan in de asset-lijst van sw.js)
+if os.path.exists(os.path.join(ROOT, 'sw.js')):
+    prevb = set(re.findall(r'boekje/[^"]+?\.[0-9a-f]{8}\.(?:jpg|pdf)', open(os.path.join(ROOT, 'sw.js'), encoding='utf-8').read()))
 run('python3 build.py', cwd=B)
 out = os.path.join(B, 'dist', 'github')
 new = set(os.listdir(out))
-for f in new: shutil.copy(os.path.join(out, f), os.path.join(ROOT, f))
-keep = new | prev
 removed = []
+for f in new:
+    src = os.path.join(out, f)
+    if os.path.isdir(src):   # bv. boekje/: kopiëren en oude bestanden opruimen (vorige versie blijft staan)
+        shutil.copytree(src, os.path.join(ROOT, f), dirs_exist_ok=True)
+        cur = set(f + '/' + x for x in os.listdir(src))
+        for x in os.listdir(os.path.join(ROOT, f)):
+            if f + '/' + x not in cur | prevb: os.remove(os.path.join(ROOT, f, x)); removed.append(f + '/' + x)
+    else: shutil.copy(src, os.path.join(ROOT, f))
+keep = new | prev
 for f in os.listdir(ROOT):
     if re.fullmatch(r'(?:app|data|aerial)\.[0-9a-f]{8}\.(?:js|json|jpg)', f) and f not in keep:
         os.remove(os.path.join(ROOT, f)); removed.append(f)

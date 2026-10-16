@@ -66,3 +66,13 @@ test('veiligheid: lijst, eigen items en voortgang', () => {
   const p = safetyProgress(st); assert.equal(p.done, 3); assert.equal(p.reqDone, 2); assert.equal(p.reqTotal, 9);
   assert.equal(safetyProgress(null).done, 0);
 });
+
+test('banenboekje: uitsnede-stijl en index met alle banen 51–90 en 2–5', async () => {
+  const { cropStyle } = await import('../src/ui/boekje.js');
+  const st = cropStyle({ x: 0.5, y: 0.25, w: 0.2, h: 0.5 }, 1.4);
+  assert.equal(st.box, 'aspect-ratio:0.5600'); assert.equal(st.img, 'width:500.000%;left:-250.000%;top:-50.000%');
+  const J = JSON.parse(readFileSync(new URL('../assets/boekje/index.json', import.meta.url)));
+  for (let b = 51; b <= 90; b++) assert.ok(J.banen[b], 'baan ' + b);
+  for (let b = 2; b <= 5; b++) assert.ok(J.banen[b], 'baan ' + b);
+  for (const b of Object.values(J.banen)) assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.w <= 1 && b.y + b.h <= 1 && J.pages.some(p => p.n === b.p));
+});
