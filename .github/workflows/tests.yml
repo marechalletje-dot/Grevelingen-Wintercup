@@ -1,0 +1,18 @@
+# Draait de unit tests van de app bij elke push naar main (zichtbaar als vinkje/kruisje bij de commit op GitHub).
+name: tests
+on:
+  push:
+    branches: [main]
+    paths: ['_bron/**']
+  workflow_dispatch:
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests
+        working-directory: _bron
+        run: node --test tests/*.test.js
