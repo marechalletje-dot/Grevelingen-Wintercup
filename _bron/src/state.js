@@ -15,7 +15,7 @@ export const SCHEMA = {
   area:    { def: 'B', key: 'wc_area', fix: v => (v && 'ABCD'.includes(v) && v.length === 1 ? v : undefined) },
   allC:    { def: false },
   mapStyle:{ def: 'chart', key: 'wc_style2', fix: v => (['chart','dim','photo','night'].includes(v) ? v : undefined) },
-  tab:     { def: 'Kaart', key: 'wc_tab', fix: v => (['Kaart','Race','Analyse','Deeln','Uitslag','Regels','Uitleg'].includes(v) ? v : undefined) },
+  tab:     { def: 'Kaart', key: 'wc_tab', fix: v => (['Kaart','Race','Boot','Analyse','Deeln','Uitslag','Regels','Uitleg'].includes(v) ? v : undefined) },
   voice:   { def: true, key: 'wc_voice', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   demoSpd: { def: 10, key: 'wc_demospd', fix: v => (+v === 10 || +v === 60 ? +v : undefined) },
   race:    { def: { start: null, fin: null }, key: 'wc_race', json: true,
@@ -49,6 +49,11 @@ export const SCHEMA = {
   skAddr:  { def: '', key: 'wc_skaddr', fix: v => (typeof v === 'string' ? v.trim() : undefined) },
   skAuto:  { def: false, key: 'wc_skauto', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s === '1' },
   skGps:   { def: false, key: 'wc_skgps', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s === '1' },
+  // v53: tab Boot — eigen polar, sail selection chart (+ afbeelding) en veiligheidsmiddelen, per boot
+  polarCustom: { def: {}, key: 'wc_polarc', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
+  sailChart:   { def: {}, key: 'wc_sailchart', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
+  sailImg:     { def: {}, key: 'wc_sailimg', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
+  safety:      { def: {}, key: 'wc_safety', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);
 

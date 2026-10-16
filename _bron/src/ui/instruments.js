@@ -119,9 +119,10 @@ export function initInstruments(o) {
   $('sailChips') && $('sailChips').addEventListener('click', e => {
     const b = e.target.closest('button[data-s]'); if (!b) return;
     const on = new Set(aboard().map(x => x.id)); on.has(b.dataset.s) ? on.delete(b.dataset.s) : on.add(b.dataset.s);
-    ST.sailsAboard = sailsFor(ST.boat).filter(x => on.has(x.id)).map(x => x.id); if (!ST.sailsAboard.length) ST.sailsAboard = [b.dataset.s];
+    const all = sailsFor(ST.boat); if (!on.size) on.add(b.dataset.s);
+    ST.sailsAboard = (ST.sailsAboard || []).filter(id => !all.some(x => x.id === id)).concat(all.filter(x => on.has(x.id)).map(x => x.id));   // keuze van de andere boot blijft bewaard
   });
-  store.on(['boat', 'sailsAboard'], () => { renderChips(); lastBar = ''; renderSailBar(); });
+  store.on(['boat', 'sailsAboard', 'sailChart'], () => { renderChips(); lastBar = ''; renderSailBar(); });
 
   // ---------- bediening ----------
   if ($('skAddr')) {

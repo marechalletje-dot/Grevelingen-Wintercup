@@ -20,7 +20,9 @@ import { slotTimes } from './core/startseq.js';
 import { beatAngle, gybeAngle, laylines, gateFromLine } from './core/layline.js';
 import { cutPassMarks, mergePassLegs } from './core/passmarks.js';
 import { shortestLeg, parseRings } from './core/shortpath.js';
-import { aboardList, advise, sailsFor } from './core/sails.js';
+import { aboardList, advise, sailsFor, setCustomSails } from './core/sails.js';
+import { validPolar } from './core/polarfile.js';
+import { initBoat } from './ui/boat.js';
 import { initInstruments } from './ui/instruments.js';
 
 const D=window.__D;
@@ -32,10 +34,13 @@ export const store=createStore(LS);
 const ST=store.S;
 if(!D.courses[ST.baan])ST.baan=51;
 window.__store=store;   // voor tests en foutzoeken
+setCustomSails(ST.sailChart);   // eigen sail selection chart (tab Boot)
+/** Polar van een boot: eigen ingelezen polar (tab Boot) of de standaard uit data/boats.js. */
+function polarOf(b){const c=(ST.polarCustom||{})[b];return c&&validPolar(c.polar)?c.polar:BOATS[b].polar}
 
 // Dunne wrappers: het rekenwerk is puur (core), hier komt de actuele toestand erbij.
-const calcCtx=()=>({polar:BOATS[ST.boat].polar,twd:ST.twd,tws:ST.tws,eff:ST.eff,tackS:ST.tackS,gybeS:ST.gybeS});
-function perf(twa,tws){return corePerf(BOATS[ST.boat].polar,twa,tws,ST.eff)}
+const calcCtx=()=>({polar:polarOf(ST.boat),twd:ST.twd,tws:ST.tws,eff:ST.eff,tackS:ST.tackS,gybeS:ST.gybeS});
+function perf(twa,tws){return corePerf(polarOf(ST.boat),twa,tws,ST.eff)}
 function segTime(sg){return TM.segTime(sg,calcCtx())}
 function sailTime(l){return TM.sailTime(l,calcCtx())}
 function legTime(l){return TM.legTime(l,calcCtx())}
@@ -672,6 +677,7 @@ function showResult(){if(!RACE.fin){$('raceRes').hidden=true;return}const el=(RA
 $('finBtn').onclick=()=>{if(!RACE.start)return;RACE.fin=Date.now();saveRace();$('dlOver').value=((RACE.fin-RACE.start)/60000).toFixed(2);beep(1,660,.8);showResult();try{renderFleet()}catch(e){}};
 setInterval(raceTick,250);
 function raceMode(on){document.body.classList.toggle('race',on);try{PANELS&&PANELS.apply()}catch(e){}try{applyVB()}catch(e){}}
+$('toBoot').onclick=()=>setTab('Boot');
 $('raceBtn').onclick=()=>{setTab('Race');setTimeout(()=>{$('chart').scrollIntoView({block:'start'})},50)};
 function rbSync(){$('rbTwdR').value=Math.round(ST.twd/5)*5%360;$('rbTwd').textContent=pad3(ST.twd);$('rbTwsR').value=ST.tws;$('rbTws').textContent=ST.tws+' kn';$('rbEffR').value=ST.eff;$('rbEff').textContent=ST.eff+'%';$('rbSig5').value=RACE.start?new Date(RACE.start-300000).toTimeString().slice(0,8):''}
 $('rbEffR').addEventListener('input',e=>{$('rbEff').textContent=e.target.value+'%'});
@@ -766,7 +772,7 @@ function demoStart(){if(!CUR)return;G.vmc=null;G.cdTarget=null;G.spiDone=null;G.
   const DW=(typeof WXU!=='undefined'&&WXU.demoWind)?WXU.demoWind():null;
   const DT=1;let seg=0,t=0,simT=DW?DW.start:Date.now();
   let curXY=pts[0];const windNow=()=>DW?DW.at(simT,curXY):{twd:ST.twd,tws:ST.tws};
-  const knAt=i=>{const w=windNow();const p=corePerf(BOATS[ST.boat].polar,navTwaOf(w.twd,tws[Math.min(i,tws.length-1)]).a,Math.max(4,w.tws),ST.eff);return Math.max(0.5,p.vmc)};
+  const knAt=i=>{const w=windNow();const p=corePerf(polarOf(ST.boat),navTwaOf(w.twd,tws[Math.min(i,tws.length-1)]).a,Math.max(4,w.tws),ST.eff);return Math.max(0.5,p.vmc)};
   $('gMsg').textContent=DW?`Proefvaart met verwachte wind vanaf ${new Date(simT).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}; snelheid uit de polar.`:'Proefvaart met de ingestelde wind; snelheid uit de polar.';
   const toLLd=(x,y)=>[-y/60+51.74,x/(Math.cos(51.74*Math.PI/180)*60)+3.95];
   clearInterval(G.demoTimer);
@@ -937,7 +943,7 @@ async function makePdf(){
         const lines=doc.splitTextToSize(txt,TW-18);if(y+lines.length*3.1>PH-M-22)return;doc.setTextColor(93,107,115);doc.text(it.at,TX,y);doc.setTextColor(29,42,51);doc.text(lines,TX+17,y);y+=lines.length*3.1+0.9});y+=3}
     // notes
     doc.setFont('helvetica','normal');doc.setFontSize(7.2);doc.setTextColor(93,107,115);
-    const notes=[`Koers = magnetische kompaskoers (rechtwijzend min 2,5° variatie), zonder deviatie. TWA t.o.v. ware wind ${ST.twd}°. Rakken met deelrakken: gemiddelde koers met bereik; deelrakken lopen van boei naar boei. Zeiltijd: polar ${BOATS[ST.boat].polarSrc}, TWS ${ST.tws} kn, rendement ${ST.eff}%, met ${ST.tackS} s per overstag en ${ST.gybeS} s per gijp, zonder stroom. Spinnaker-icoon en -plan vanaf TWA ${ST.spiMin}°. Bootje: zeil aan lij; groen = wind van stuurboord, rood = wind van bakboord.`,
+    const notes=[`Koers = magnetische kompaskoers (rechtwijzend min 2,5° variatie), zonder deviatie. TWA t.o.v. ware wind ${ST.twd}°. Rakken met deelrakken: gemiddelde koers met bereik; deelrakken lopen van boei naar boei. Zeiltijd: polar ${(ST.polarCustom||{})[ST.boat]?"eigen polar ("+ST.polarCustom[ST.boat].name+")":BOATS[ST.boat].polarSrc}, TWS ${ST.tws} kn, rendement ${ST.eff}%, met ${ST.tackS} s per overstag en ${ST.gybeS} s per gijp, zonder stroom. Spinnaker-icoon en -plan vanaf TWA ${ST.spiMin}°. Bootje: zeil aan lij; groen = wind van stuurboord, rood = wind van bakboord.`,
       'Gate 0,5 nm recht in de wind vanaf de start; start zo gekozen dat het kruisrak in water van minimaal 2,4 m ligt. Routes: kortste weg in water van minimaal 2,4 m, binnen de betonning waar het boekje een vaarwater noemt.',
       'Diepte: RWS bodemhoogte 20 m (t/m 2024), meerpeil NAP -0,30 m. Betonning: RWS vaarwegmarkeringen drijvend. Luchtfoto: Beeldmateriaal Nederland / PDOK. Finish schematisch volgens het boekje.',
       'Hulpmiddel bij de voorbereiding; geen vervanging van de officiële kaart, de wedstrijdbepalingen of de dieptemeter aan boord.'];
@@ -1006,7 +1012,7 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);try{drawLaylines()}catch(e){}
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
@@ -1025,7 +1031,7 @@ $('gdBtn').onclick=()=>{const on=!document.body.classList.contains('gdon');docum
  */
 let LAYL_LEG=-1;
 function drawLaylines(){if(!CUR)return;const g0=$('course');let lg=document.getElementById('laylG');if(!lg||!g0.contains(lg)){lg=el('g',{id:'laylG'},g0)}lg.innerHTML='';
-  try{const P=BOATS[ST.boat].polar,ba=beatAngle(P,ST.tws),ga=gybeAngle(P,ST.tws),mag=h=>pad3(Math.round(((h-D.decl)%360+360)%360)%360);
+  try{const P=polarOf(ST.boat),ba=beatAngle(P,ST.tws),ga=gybeAngle(P,ST.tws),mag=h=>pad3(Math.round(((h-D.decl)%360+360)%360)%360);
    const S=CUR.S,legs=CUR.legs,race=document.body.classList.contains('race'),gd=document.body.classList.contains('gdon');
    const gLen=Math.hypot(S.gate[0]-S.start[0],S.gate[1]-S.start[1])||0.5;
    const draw=(m,ang,len,kind)=>{const L=laylines(m,ST.twd,ang,len);
@@ -1062,7 +1068,7 @@ function loadFleet(){const B=BOATS[ST.boat];FLEET0=FLEETS[CLS()];DM0=myDefault()
   $('dlMy').value=DM0;{const m=(ST.myf2||{})[myKey()];if(m>0.6&&m<1.4)$('dlMy').value=m}
   $('dlCls').innerHTML=Object.entries(CLASSES).map(([k,l])=>`<option value="${k}"${k===CLS()?' selected':''}>${l} · ${FLEETS[k].length} boten${k===B.cls?' (jouw klasse)':''}</option>`).join('');
   $('dlEstLab').textContent='Geschatte zeiltijd '+B.name;$('dlMyLab').textContent=B.rlab+' '+B.name;$('dlNote').textContent=B.note;try{$('dlNoteU').textContent=B.note+' '+FLEET_SRC}catch(e){}
-  document.querySelectorAll('.bname').forEach(e=>e.textContent=B.name);$('polSrc').textContent=B.polarSrc;
+  document.querySelectorAll('.bname').forEach(e=>e.textContent=B.name);$('polSrc').textContent=(ST.polarCustom||{})[ST.boat]?'eigen polar ('+ST.polarCustom[ST.boat].name+')':B.polarSrc;
   $('boatSel').value=ST.boat;$('boatHint').textContent=B.klasse}
 function saveFleet(){store.set({fleets2:Object.assign({},ST.fleets2,{[CLS()]:FLEET}),myf2:Object.assign({},ST.myf2,{[myKey()]:+$('dlMy').value})})}
 loadFleet();
@@ -1124,15 +1130,18 @@ store.on(['baan','boat','eff','tackS','gybeS','area','sgAdj','wbPos'],()=>setTim
 
 window.__course=()=>CUR&&CUR.legs.map(l=>l.p.map(q=>xyLL(q[0],q[1])));window.__legs=()=>CUR&&CUR.legs.map(l=>({p:l.p,wp:l.wp||null,wpf:l.wpf||null,nm:l.nm,short:l.short||0,t:l.t,f:l.f}));window.__pass=()=>CUR?(CUR.c.allMarks||CUR.c.marks).filter(m=>m.pass).map(m=>m.l):[];// voor tests
 var PRA=initAnalysis({store,llXY,xyLL,boats:BOATS,getLegs:()=>CUR&&CUR.legs,getMeta:()=>({baan:ST.baan,area:ST.area,boat:ST.boat}),
-  getPolar:b=>(BOATS[b]||BOATS[ST.boat]).polar,getCtx:calcCtx,waterD:()=>$('water').getAttribute('d'),
+  getPolar:b=>polarOf(BOATS[b]?b:ST.boat),getCtx:calcCtx,waterD:()=>$('water').getAttribute('d'),
   slotStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   setCourse:m=>{if(m.boat&&BOATS[m.boat]&&m.boat!==ST.boat){$('boatSel').value=m.boat;$('boatSel').onchange({target:$('boatSel')})}if(m.area&&'ABCD'.includes(m.area))ST.area=m.area;if(m.baan&&D.courses[m.baan])ST.baan=+m.baan;show(true)}});
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});
-var INS;try{INS=initInstruments({store,decl:D.decl,perf:(twa,tws)=>corePerf(BOATS[ST.boat].polar,twa,tws,100).bs,
+var INS;try{INS=initInstruments({store,decl:D.decl,perf:(twa,tws)=>corePerf(polarOf(ST.boat),twa,tws,100).bs,
   legTwa:i=>{const l=CUR&&CUR.legs[i];if(!l)return null;return twaOf(l.s.length===1?l.s[0].tw:legStats(l).tw).a},
   curLeg:()=>(G.on?NAV.leg:-1),gpsOn:()=>G.on&&!G.demo,onFix:p=>{try{gpsFix(p)}catch(e){console.error(e)}},isRace:()=>ST.tab==='Race',
   setWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}})}catch(e){console.error('instrumenten',e)}
 store.on(['sailsAboard','boat'],()=>setTimeout(()=>{try{show(false)}catch(e){}},0));
+var BOAT;try{BOAT=initBoat({store,boats:BOATS,selectBoat:b=>{if(!BOATS[b]||b===ST.boat)return;$('boatSel').value=b;$('boatSel').onchange({target:$('boatSel')})}})}catch(e){console.error('boot',e)}
+// eigen polar of chart gewijzigd (tab Boot): rakkentabel, zeiladvies, laylines en simulatie opnieuw
+store.on(['polarCustom','sailChart'],()=>setTimeout(()=>{try{show(false)}catch(e){}try{INS&&INS.refresh()}catch(e){}try{WXU.refresh&&WXU.refresh()}catch(e){}try{$('polSrc').textContent=(ST.polarCustom||{})[ST.boat]?'eigen polar ('+ST.polarCustom[ST.boat].name+')':BOATS[ST.boat].polarSrc}catch(e){}},0));
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
 {const t0=ST.tab;ST.tab='Kaart';if(t0!=='Kaart')setTab(t0)}
