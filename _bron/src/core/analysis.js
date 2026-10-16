@@ -110,7 +110,7 @@ export function cleanTrack(pts, { t0 = -Infinity, t1 = Infinity, maxKn = 25 } = 
   const out = [];
   for (const p of a) {
     const q = out[out.length - 1];
-    if (q && p.t - q.t < 1000) continue;
+    if (q && p.t - q.t < 900) continue;
     if (q) { const v = distNm([q.lat, q.lon], [p.lat, p.lon]) / ((p.t - q.t) / 3600e3); if (v > maxKn) continue; }
     out.push({ t: p.t, lat: p.lat, lon: p.lon });
   }
@@ -151,15 +151,21 @@ export function matchMarks(pts, marks, R = 0.12) {
 }
 
 // ---------- prestatie ----------
-/** Per punt: ware wind (windFn(t,lat,lon)), TWA uit de grondkoers, polar-snelheid en prestatie (SOG / polar). */
+/**
+ * Per punt: ware wind (windFn(t,lat,lon) → {twd, tws, twa?, src?}), TWA en polar-snelheid en prestatie (snelheid / polar).
+ * v52: geeft windFn een gemeten TWA (boordinstrumenten), dan telt die i.p.v. de TWA uit de grondkoers; heeft het punt
+ * een snelheid door het water (p.stw), dan is dat de snelheid, anders SOG.
+ */
 export function perfSeries(pts, windFn, polar) {
   return pts.map(p => {
-    const w = windFn(p.t, p.lat, p.lon); if (!w || p.cog == null) return { ...p, twd: w && w.twd, tws: w && w.tws, twa: null, target: null, ratio: null };
-    const twa = angDiff(p.cog, w.twd);
+    const w = windFn(p.t, p.lat, p.lon);
+    const hasTwa = w && w.twa != null && isFinite(w.twa);
+    if (!w || (p.cog == null && !hasTwa)) return { ...p, twd: w && w.twd, tws: w && w.tws, twa: null, target: null, ratio: null, spd: p.stw != null ? p.stw : p.sog };
+    const twa = hasTwa ? Math.min(180, Math.abs(w.twa)) : angDiff(p.cog, w.twd);
     const pf = perf(polar, twa, Math.max(2, w.tws), 100);
-    const target = pf.bs;
-    const ok = w.tws >= 3 && target > 0.8 && p.sog > 0.5;
-    return { ...p, twd: w.twd, tws: w.tws, twa, mode: pf.mode, target, vmgTarget: pf.mode === 'direct' ? null : pf.vmc, ratio: ok ? p.sog / target : null };
+    const target = pf.bs; const spd = p.stw != null ? p.stw : p.sog;
+    const ok = w.tws >= 3 && target > 0.8 && spd > 0.5;
+    return { ...p, twd: w.twd, tws: w.tws, twa, wsrc: w.src || 'model', spd, mode: pf.mode, target, vmgTarget: pf.mode === 'direct' ? null : pf.vmc, ratio: ok ? spd / target : null };
   });
 }
 const vecMean = arr => { let sx = 0, sy = 0; arr.forEach(d => { sx += Math.sin(d * R); sy += Math.cos(d * R); }); return arr.length ? ((Math.atan2(sx, sy) / R) + 360) % 360 : null; };

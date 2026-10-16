@@ -44,6 +44,11 @@ export const SCHEMA = {
   spiOpen: { def: true, key: 'wc_spiopen', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s !== '0' },
   view:    { def: '', key: 'wc_view', fix: v => (['', 'map', 'legs'].includes(v) ? v : undefined) },
   layout:  { def: {}, key: 'wc_layout41', json: true, fix: v => (v && typeof v === 'object' && !Array.isArray(v) ? v : undefined) },
+  // v52: zeilen aan boord (leeg = standaard uit de sail selection chart) en Signal K (boordinstrumenten)
+  sailsAboard: { def: [], key: 'wc_sailsaboard', json: true, fix: v => (Array.isArray(v) ? v.filter(x => typeof x === 'string') : undefined) },
+  skAddr:  { def: '', key: 'wc_skaddr', fix: v => (typeof v === 'string' ? v.trim() : undefined) },
+  skAuto:  { def: false, key: 'wc_skauto', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s === '1' },
+  skGps:   { def: false, key: 'wc_skgps', fix: v => !!v, ser: v => (v ? '1' : '0'), de: s => s === '1' },
 };
 const clone = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);
 

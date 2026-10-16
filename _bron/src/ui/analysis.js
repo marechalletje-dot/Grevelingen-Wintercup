@@ -5,6 +5,8 @@ import { fieldUrl, parseField, fieldWind, fieldAt, sampleGrid } from '../core/wx
 import { simulate } from '../core/wx.js';
 import { RACES } from '../data/results.js';
 import { wname } from '../core/nav.js';
+import { unpackIns, insAt } from '../core/signalk.js';
+import { sailsFor, sailById, segments, normLog, inZone } from '../core/sails.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pad = n => String(n).padStart(2, '0');
@@ -29,14 +31,37 @@ const REC = { day: null, doc: null, last: 0, dirty: 0 };
 function recFlush() { if (REC.doc && REC.dirty) { LS.set(K_TRK + REC.day, REC.doc); REC.dirty = 0; } }
 /** Eén GPS-punt opnemen (min. 5 s tussen punten). meta = {baan, area, boat, start}. */
 export function recordFix(t, lat, lon, meta) {
-  if (!isFinite(lat) || !isFinite(lon) || t - REC.last < 5000) return;
+  if (!isFinite(lat) || !isFinite(lon) || t - REC.last < (REC.minDt || 5000) - 20) return;
   const day = isoOf(t);
   if (REC.day !== day) { recFlush(); REC.day = day; const old = LS.get(K_TRK + day); REC.doc = old && old.src === 'app' ? old : { day, src: 'app', meta: {}, pts: [] }; }
   REC.doc.pts.push([Math.round(t / 1000), Math.round(lat * 1e5), Math.round(lon * 1e5)]);
   REC.doc.meta = { ...REC.doc.meta, ...meta }; REC.doc.saved = Date.now(); REC.last = t;
   if (++REC.dirty >= 6) recFlush();
 }
-if (typeof document !== 'undefined') { document.addEventListener('visibilitychange', () => { if (document.hidden) recFlush(); }); addEventListener('pagehide', recFlush); }
+/** Minimale tijd tussen opgenomen GPS-punten (5 s met de telefoon-GPS, 1 s met de GPS van de boot via Signal K). */
+export function setRecInterval(ms) { REC.minDt = ms; }
+
+// ---------- v52: boordinstrumenten (Signal K) en zeilvoering ----------
+const K_INS = 'wc_ins_', K_SAIL = 'wc_sails_';
+const INS = { day: null, doc: null, last: 0, dirty: 0 };
+function insFlush() { if (INS.doc && INS.dirty) { LS.set(K_INS + INS.day, INS.doc); INS.dirty = 0; } }
+/** Eén rij instrumentdata opnemen (packIns-formaat, min. 1 s ertussen). */
+export function recordIns(t, row) {
+  if (!row || t - INS.last < 950) return;
+  const day = isoOf(t);
+  if (INS.day !== day) { insFlush(); INS.day = day; INS.doc = LS.get(K_INS + day) || { day, rows: [] }; }
+  INS.doc.rows.push(row); INS.last = t;
+  if (++INS.dirty >= 10) insFlush();
+}
+export const getIns = day => { if (INS.day === day) insFlush(); const d = LS.get(K_INS + day); return d && d.rows ? d.rows : []; };
+export const getSailLog = day => LS.get(K_SAIL + day) || [];
+export const setSailLog = (day, ev) => LS.set(K_SAIL + day, ev);
+/** Zeilwissel vastleggen (zeil-id s op tijdstip t). */
+export function logSail(t, s) { const day = isoOf(t); const ev = getSailLog(day); ev.push({ t, s }); setSailLog(day, ev); return ev; }
+export const todayIso = () => isoOf(Date.now());
+
+function flushAll() { recFlush(); insFlush(); }
+if (typeof document !== 'undefined') { document.addEventListener('visibilitychange', () => { if (document.hidden) flushAll(); }); addEventListener('pagehide', flushAll); }
 
 /** Simulatie vóór de race bewaren (laatste versie vóór de start telt). */
 export function savePreSim(day, sim, meta) {
@@ -89,6 +114,9 @@ export function initAnalysis(o) {
       $('paDel').hidden = false;
     } else { $('paTrk').textContent = 'Nog geen track voor deze dag. Neem op in de tab Race, laad een GPX/CSV-bestand of haal AIS-data op.'; $('paDel').hidden = true; }
     $('paSimInfo').textContent = A.sim ? `Simulatie vooraf${A.sim.manual ? ` (achteraf gemaakt: ${String(A.sim.manual.twd).padStart(3, '0')}° ${A.sim.manual.tws} kn constant)` : ` bewaard ${hm(A.sim.saved)}`} · baan ${A.sim.baan || '?'} · start ${hm(A.sim.start)} · finish ${hm(A.sim.finish)}.` : 'Geen simulatie vóór de race bewaard (wordt bewaard zodra je vóór de start de windverwachting ophaalt in Race preparation).';
+    { const I = unpackIns(getIns(d)); A.insN = I.length;
+      $('paInsInfo').innerHTML = I.length ? `✓ Boordinstrumenten: ${I.length} metingen, ${hm(I[0].t)}–${hm(I[I.length - 1].t)}${I.some(x => x.stw != null) ? ' · met STW' : ''}${I.some(x => x.tws != null) ? ' · met ware wind' : ''}` : 'Geen boordinstrumenten opgenomen voor deze dag (Signal K in de tab Race).'; }
+    $('paSailCard').hidden = !sailsFor(getMeta().boat).length;
     $('paWxInfo').textContent = A.act ? `Actuele modelwind ${A.act.model.replace('_seamless', '').toUpperCase()} opgehaald ${new Date(A.act.fetched).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.` : 'Nog niet opgehaald.';
   }
   const startMs = () => { const [h, mi, s] = ($('paStart').value || '11:00:00').split(':').map(Number); const [y, m, d] = A.day.split('-').map(Number); return new Date(y, m - 1, d, h || 0, mi || 0, s || 0).getTime(); };
@@ -160,8 +188,16 @@ export function initAnalysis(o) {
     const P0 = addMotion(cleanTrack(unpackTrack(A.trk.pts), { t0: start - 60e3 }));
     if (P0.length < 10) { msg.textContent = 'Te weinig trackpunten na de start. Controleer de starttijd.'; out.hidden = true; return; }
     const F = A.act && A.act.field;
-    const windFn = F ? (t, la, lo) => fieldWind(F, t, la, lo) : () => null;
+    const I = $('paWsrc').value === 'model' ? [] : unpackIns(getIns(A.day));
+    if (I.length) P0.forEach(p => { const x = insAt(I, p.t, 5e3); if (x && x.stw != null) p.stw = x.stw; });
+    const model = F ? (t, la, lo) => fieldWind(F, t, la, lo) : () => null;
+    const windFn = !I.length ? model : (t, la, lo) => {
+      const x = insAt(I, t, 5e3);
+      if (x && x.tws != null && x.twa != null) { const m = x.twd == null ? model(t, la, lo) : null; return { twd: x.twd != null ? x.twd : m && m.twd, tws: x.tws, twa: x.twa, src: 'ins' }; }
+      return model(t, la, lo);
+    };
     const P = perfSeries(P0, windFn, getPolar(A.metaBoat()));
+    A.measured = P.some(p => p.wsrc === 'ins'); A.hasStw = P.some(p => p.stw != null);
     const rounds = matchMarks(P, marks);
     const L = legStats(P, rounds, start);
     const OV = overall(L);
@@ -173,9 +209,14 @@ export function initAnalysis(o) {
       ideal = simulate(legs, ctx, mid, start, (t, xy) => { const [la, lo] = xyLL(xy[0], xy[1]); return sampleGrid(F, fieldAt(F, t), la, lo); });
     }
     const pre = A.sim && A.sim.legs && A.sim.legs.length === legs.length ? A.sim : null;
-    renderSummary(L, OV, ideal, pre, start, F);
+    A.SL = normLog(getSailLog(A.day));
+    const fin = L.filter(Boolean).pop(); const tEnd = fin ? fin.t1 : P[P.length - 1].t;
+    renderSummary(L, OV, ideal, pre, start, F || A.measured);
     renderTable(legs, L, ideal, pre, start);
+    A.last = { P, legs, rounds };
     renderMap(P, legs, rounds);
+    renderSails(P, start, tEnd);
+    renderSailLog();
     renderCharts(P, L, start, ideal, pre);
     out.hidden = false;
     const miss = rounds.filter(r => !r || !r.ok).length;
@@ -195,7 +236,7 @@ export function initAnalysis(o) {
       k('Simulatie vooraf', preH != null ? fmtH(preH) : '–', preH != null && act != null ? `${fmtD(act - preH)} ${act > preH ? 'langzamer' : 'sneller'}` : 'niet bewaard') +
       k('Polar met actuele wind', idH != null ? fmtH(idH) : '–', idH != null && act != null ? `${fmtD(act - idH)} t.o.v. 100% polar` : 'geen winddata') +
       k('Prestatie t.o.v. polar', pct(OV.ratio), 'gem. bootsnelheid / polarsnelheid') +
-      k('Wind (model, achteraf)', wind, preW ? `verwacht ${preW}` : '');
+      k(A.measured ? 'Wind (gemeten aan boord)' : 'Wind (model, achteraf)', wind, preW ? `verwacht ${preW}` : '');
   }
 
   function renderTable(legs, L, ideal, pre, start) {
@@ -210,7 +251,8 @@ export function initAnalysis(o) {
         <td class="num">${fmtH(idd)}<small>${idd != null && x ? fmtD(x.dur - idd) : ''}</small></td>
         <td class="num">${x && x.twd != null ? String(Math.round(x.twd)).padStart(3, '0') + '°' : '–'}<small>${x && x.tws != null ? Math.round(x.tws) + ' kn' : ''}${s ? ' · v ' + Math.round(s.tws) : ''}</small></td>
         <td class="num">${x ? x.sog.toFixed(1) : '–'}<small>${x ? x.nm.toFixed(2) + ' nm' : ''}</small></td>
-        <td class="num"><span class="pa-pf ${cls}">${x ? pct(x.ratio) : '–'}</span></td></tr>`;
+        <td class="num"><span class="pa-pf ${cls}">${x ? pct(x.ratio) : '–'}</span></td>
+        <td>${x ? [...new Set(segments(A.SL || [], x.t0, x.t1).filter(g => g.s && g.t1 - g.t0 > 20e3).map(g => g.s))].map(id => { const sl = sailById(getMeta().boat, id); return sl ? `<span class="spill" style="--sc:${sl.col}">${esc(sl.name)}</span>` : ''; }).join('') : ''}</td></tr>`;
     }).join('');
     $('paLegs').innerHTML = rows;
   }
@@ -230,14 +272,66 @@ export function initAnalysis(o) {
     el('rect', { x: x0 - 50, y: y0 - 50, width: x1 - x0 + 100, height: y1 - y0 + 100, class: 'pa-land' }, svg);
     const wd = waterD(); if (wd) el('path', { d: wd, class: 'pa-water', 'fill-rule': 'evenodd' }, svg);
     legs.forEach(l => el('polyline', { points: l.p.map(q => q.join(',')).join(' '), class: 'pa-course' }, svg));
-    // track in stukjes per prestatieklasse
+    // track in stukjes per prestatieklasse of per zeil
+    const bySail = $('paColor').value === 'sail'; const boat = getMeta().boat; const SL = A.SL || [];
     let cur = null, pts = [];
-    const flush = () => { if (pts.length > 1) el('polyline', { points: pts.join(' '), class: 'pa-trk', stroke: PF_COL(cur) }, svg); };
+    const colOf = c => (bySail ? (c && sailById(boat, c) ? sailById(boat, c).col : '#9aa3ad') : PF_COL(c));
+    const flush = () => { if (pts.length > 1) el('polyline', { points: pts.join(' '), class: 'pa-trk', stroke: colOf(cur) }, svg); };
     const cl = r => (r == null ? null : r < 0.85 ? 0.8 : r < 0.95 ? 0.9 : r <= 1.05 ? 1 : 1.1);
-    P.forEach(p => { const [x, y] = ll2(p); const c = cl(p.ratio); if (c !== cur && pts.length) { pts.push(x + ',' + y); flush(); pts = [pts[pts.length - 1]]; } cur = c; pts.push(x + ',' + y); });
+    const sailIdx = SL.length ? (() => { let k = 0; return t => { while (k < SL.length && SL[k].t <= t) k++; return k ? SL[k - 1].s : null; }; })() : () => null;
+    P.forEach(p => { const [x, y] = ll2(p); const c = bySail ? sailIdx(p.t) : cl(p.ratio); if (c !== cur && pts.length) { pts.push(x + ',' + y); flush(); pts = [pts[pts.length - 1]]; } cur = c; pts.push(x + ',' + y); });
     flush();
+    $('paMapLeg').innerHTML = bySail
+      ? [...new Set(SL.map(e => e.s))].map(id => sailById(boat, id)).filter(Boolean).map(sl => `<span><i style="background:${sl.col}"></i>${esc(sl.name)}</span>`).join('') + `<span><i style="background:#9aa3ad"></i>onbekend</span>`
+      : '<span><i style="background:#b8461b"></i>&lt; 85%</span><span><i style="background:#e59a52"></i>85–95%</span><span><i style="background:#8f9aa6"></i>95–105%</span><span><i style="background:#2f6db5"></i>&gt; 105%</span><span class="sub">van de polarsnelheid</span>';
     legs.forEach((l, i) => { const q = l.p[l.p.length - 1]; const g = el('g', {}, svg); el('circle', { cx: q[0], cy: q[1], r: 0.045, class: 'pa-mk' + (rounds[i] && rounds[i].ok ? '' : ' miss') }, g); const t = el('text', { x: q[0] + 0.07, y: q[1] + 0.03, class: 'pa-mkl' }, g); t.textContent = i + 1; });
   }
+
+  // ---------- zeilvoering ----------
+  function renderSails(P, start, tEnd) {
+    const boat = getMeta().boat; if (!sailsFor(boat).length) return;
+    const segs = segments(A.SL || [], start, tEnd); const agg = new Map();
+    for (const g of segs) {
+      const a = agg.get(g.s) || { dur: 0, nm: 0, rw: 0, rs: 0, ws: 0, wv: 0, wa: 0, zin: 0, zn: 0 }; agg.set(g.s, a);
+      const sl = g.s ? sailById(boat, g.s) : null;
+      for (let i = 1; i < P.length; i++) {
+        const q = P[i - 1], p = P[i]; if (p.t <= g.t0 || q.t >= g.t1) continue;
+        const dt = Math.min(120e3, p.t - q.t) / 3600e3; a.dur += dt; a.nm += distNm([q.lat, q.lon], [p.lat, p.lon]);
+        if (p.ratio != null) { a.rw += dt; a.rs += dt * Math.min(1.6, p.ratio); }
+        if (p.tws != null && p.twa != null) { a.ws += dt; a.wv += dt * p.tws; a.wa += dt * p.twa; if (sl) { a.zn += dt; if (inZone(sl, p.tws, p.twa)) a.zin += dt; } }
+      }
+    }
+    const T = [...agg.values()].reduce((x, a) => x + a.dur, 0) || 1;
+    const rows = [...agg.entries()].filter(([, a]) => a.dur > 0).sort((x, y) => y[1].dur - x[1].dur).map(([id, a]) => {
+      const sl = id ? sailById(boat, id) : null; const r = a.rw ? a.rs / a.rw : null;
+      const cls = r == null ? '' : r < 0.85 ? 'lo' : r < 0.95 ? 'mlo' : r > 1.05 ? 'hi' : 'ok';
+      return `<tr><td>${sl ? `<span class="spill" style="--sc:${sl.col}">${esc(sl.name)}</span>` : '<span class="sub">onbekend</span>'}</td>
+        <td class="num">${fmtH(a.dur)}<small>${Math.round(a.dur / T * 100)}%</small></td><td class="num">${a.nm.toFixed(2)} nm</td><td class="num">${a.dur ? (a.nm / a.dur).toFixed(1) : '–'} kn</td>
+        <td class="num"><span class="pa-pf ${cls}">${pct(r)}</span></td><td class="num">${a.ws ? Math.round(a.wv / a.ws) + ' kn' : '–'}<small>${a.ws ? 'TWA ' + Math.round(a.wa / a.ws) + '°' : ''}</small></td>
+        <td class="num">${sl && a.zn ? Math.round(a.zin / a.zn * 100) + '%' : '–'}</td></tr>`;
+    });
+    $('paSails').innerHTML = rows.join('') || '<tr><td colspan="7" class="sub">Geen zeilwissels vastgelegd voor deze race.</td></tr>';
+  }
+  const dayMs = v => { const [h, mi, s2] = (v || '00:00:00').split(':').map(Number); const [y, m, d] = A.day.split('-').map(Number); return new Date(y, m - 1, d, h || 0, mi || 0, s2 || 0).getTime(); };
+  function renderSailLog() {
+    const boat = getMeta().boat; const all = sailsFor(boat); if (!all.length) return;
+    const ev = normLog(getSailLog(A.day));
+    $('paSailLog').innerHTML = ev.length ? ev.map((e, i) => `<div class="row" data-i="${i}"><input type="time" step="1" value="${hms(e.t)}" aria-label="Tijd van de wissel"><select aria-label="Zeil">${all.map(x => `<option value="${x.id}"${x.id === e.s ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select><button type="button" class="x" title="Wissel verwijderen" aria-label="Wissel verwijderen">×</button></div>`).join('') : '<p class="sub">Nog geen wissels.</p>';
+  }
+  function saveSailLog() {
+    const ev = [...$('paSailLog').querySelectorAll('.row')].map(r => ({ t: dayMs(r.querySelector('input').value), s: r.querySelector('select').value }));
+    setSailLog(A.day, ev); analyse();
+  }
+  $('paSailLog').addEventListener('change', saveSailLog);
+  $('paSailLog').addEventListener('click', e => { const b = e.target.closest('.x'); if (!b) return; b.closest('.row').remove(); saveSailLog(); });
+  $('paSailAdd').onclick = () => {
+    const ev = normLog(getSailLog(A.day)); const all = sailsFor(getMeta().boat); if (!all.length) return;
+    const t = ev.length ? ev[ev.length - 1].t + 10 * 60e3 : startMs();
+    const last = ev.length ? ev[ev.length - 1].s : null;
+    ev.push({ t, s: (all.find(x => x.aboard && x.id !== last) || all.find(x => x.id !== last) || all[0]).id }); setSailLog(A.day, ev); renderSailLog(); analyse();
+  };
+  $('paWsrc').onchange = () => analyse();
+  $('paColor').onchange = () => { if (A.last) renderMap(A.last.P, A.last.legs, A.last.rounds); };
 
   function smooth(P, key, win = 60e3) {
     const out = []; let a = 0, s = 0, n = 0, b = 0;
@@ -251,11 +345,14 @@ export function initAnalysis(o) {
   function renderCharts(P, L, start, ideal, pre) {
     const fin = L.filter(Boolean).pop(); const t1 = fin ? fin.t1 : P[P.length - 1].t;
     const Q = P.filter(p => p.t >= start && p.t <= t1); if (Q.length < 5) { $('paCharts').hidden = true; return; } $('paCharts').hidden = false;
-    const sog = smooth(Q, 'sog'), tgt = smooth(Q, 'target');
-    const ratio = Q.map((p, i) => (sog[i] != null && tgt[i] > 0.8 && p.tws >= 3 ? sog[i] / tgt[i] : null));
+    const sog = smooth(Q, 'sog'), tgt = smooth(Q, 'target'), spd = smooth(Q, 'spd');
+    const stw = A.hasStw ? smooth(Q, 'stw') : null;
+    const ratio = Q.map((p, i) => (spd[i] != null && tgt[i] > 0.8 && p.tws >= 3 ? spd[i] / tgt[i] : null));
     const marks = L.map((x, i) => (x ? { t: x.t1, lab: String(i + 1) } : null)).filter(Boolean);
     const T = Q.map(p => p.t);
-    chart($('paChSpd'), T, [{ v: sog, cls: 'c-sog', lab: 'Bootsnelheid (SOG)' }, { v: tgt, cls: 'c-pol', lab: 'Polar bij actuele wind' }], { unit: 'kn', marks, yMin: 0, start });
+    const SS = [{ v: sog, cls: 'c-sog', lab: 'SOG' }]; if (stw) SS.push({ v: stw, cls: 'c-stw', lab: 'STW (door het water)' }); SS.push({ v: tgt, cls: 'c-pol', lab: A.measured ? 'Polar bij gemeten wind' : 'Polar bij actuele wind' });
+    chart($('paChSpd'), T, SS, { unit: 'kn', marks, yMin: 0, start });
+    { const lg = $('paCharts').querySelector('.pa-lg'); if (lg) lg.innerHTML = `<span><i class="sw c-sog"></i>SOG (1 min gemiddeld)</span>${stw ? '<span><i class="sw c-stw"></i>STW, snelheid door het water</span>' : ''}<span><i class="sw c-pol"></i>Polar bij ${A.measured ? 'gemeten' : 'actuele model'}wind en koers</span>`; }
     chart($('paChPf'), T, [{ v: ratio.map(r => (r == null ? null : r * 100)), cls: 'c-pf', lab: 'Prestatie' }], { unit: '%', marks, ref: 100, yMin: 50, yMax: 130, start });
     // voor/achter op de simulatie per merkteken
     const D = $('paDelta'); const items = [];

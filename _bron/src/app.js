@@ -20,6 +20,8 @@ import { slotTimes } from './core/startseq.js';
 import { beatAngle, gybeAngle, laylines, gateFromLine } from './core/layline.js';
 import { cutPassMarks, mergePassLegs } from './core/passmarks.js';
 import { shortestLeg, parseRings } from './core/shortpath.js';
+import { aboardList, advise, sailsFor } from './core/sails.js';
+import { initInstruments } from './ui/instruments.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -493,14 +495,17 @@ function show(fit){
     const segs=(l.s.length>1?(()=>{const st=legStats(l),t=twaOf(st.tw);return `<span class="sn"><b>gemiddeld</b>${st.span>4?' ('+crsRange(st)+')':''}</span><span class="r"><b>${pad3(st.mw)}</b></span><span class="r">${l.nm.toFixed(2)} nm</span><span class="r">${Math.round(t.a)}°</span><span class="pos ptype">${boatIcon(st.tw)}${pos(t.a)}</span>`})():'')+(l.s.length>1?dispSegs(l):l.s).map((sg,j)=>{const t=twaOf(sg.tw);return `<span class="sn">${l.s.length>1?esc(subName(l,sg.j)):''}</span><span class="r">${pad3(sg.mw)}</span><span class="r">${sg.nm.toFixed(2)} nm</span><span class="r">${Math.round(t.a)}°</span><span class="pos ptype">${boatIcon(sg.tw)}${pos(t.a)}</span>`}).join('');
     return `<tr data-i="${i}"><td class="num">${i+1}</td><td>${esc(i===0?'Start':i===1?'Gate':l.f)}</td><td>${esc(toName(l,i))}</td><td>${sideHtml(m)}</td><td>${l.via.map(v=>`<span class="pill via">${v}</span>`).join('')}</td><td><div class="sg">${segs}</div>${l.flag?`<div class="warn">${esc(l.flag)}</div>`:''}</td><td class="num">${l.nm.toFixed(2)}</td><td class="num">${fmtT(legTime(l))}${manTxt(l._man)?`<div class="pos">${manTxt(l._man)}</div>`:''}</td></tr>`}).join('');
   const twaCell=tw=>{const t=twaOf(tw);return `<td class="r m">${Math.round(t.a)}°</td><td class="pos"><span class="ptype">${boatIcon(tw)}<span class="ptxt">${pos(t.a)}</span></span></td>`};
+  const SLS=aboardList(ST.boat,ST.sailsAboard);
+  const sailCell=tw=>{if(!SLS.length)return '<td class="sl"></td>';const a=advise(SLS,ST.tws,twaOf(tw).a);if(!a)return '<td class="sl"></td>';
+    return `<td class="sl"><span class="spill${a.ok?'':' out'}" style="--sc:${a.sail.col}" title="${esc(a.sail.name+' '+a.sail.area+(a.ok?'':' — buiten het bereik van de zeilen aan boord'))}${a.alt.length?esc(' · ook: '+a.alt.map(x=>x.name).join(', ')):''}">${esc(a.sail.name)}${a.ok?'':'?'}</span></td>`};
   $('lpBody').innerHTML=legs.map((l,i)=>{
     const mk=i===0?null:(c.marks[i-1]||{});const sd=mk?mk.s||'':'';
     const rd=`<td>${sd?sideHtml(mk):(i===0?'<span class="pos">door gate</span>':'<span class="pos">finishlijn</span>')}</td>`;
     const to=`<td class="to" title="${esc(toName(l,i))}">${esc(toName(l,i))}${l.via.length?`<small>via ${esc(l.via.join(', '))}</small>`:''}</td>`;
-    if(l.s.length===1){const sg=l.s[0];return `<tr data-i="${i}"><td class="no">${i+1}</td>${to}${rd}${twaCell(sg.tw)}<td class="r m k">${pad3(sg.mw)}</td><td class="r m nm">${l.nm.toFixed(2)}</td><td class="r m tm" title="${esc(manTxt(l._man))}">${fmtT(legTime(l))}${l._man&&(l._man.t||l._man.g)?`<small class="rng">${l._man.t?l._man.t+'×↺':''}${l._man.g?' '+l._man.g+'×⤺':''}</small>`:''}</td></tr>`}
+    if(l.s.length===1){const sg=l.s[0];return `<tr data-i="${i}"><td class="no">${i+1}</td>${to}${rd}${twaCell(sg.tw)}<td class="r m k">${pad3(sg.mw)}</td><td class="r m nm">${l.nm.toFixed(2)}</td><td class="r m tm" title="${esc(manTxt(l._man))}">${fmtT(legTime(l))}${l._man&&(l._man.t||l._man.g)?`<small class="rng">${l._man.t?l._man.t+'×↺':''}${l._man.g?' '+l._man.g+'×⤺':''}</small>`:''}</td>${sailCell(sg.tw)}</tr>`}
     const st=legStats(l);const ds=dispSegs(l);
-    return `<tr data-i="${i}" class="parent multi" title="Klik voor de deelrakken"><td class="no">${i+1}<span class="tg">▸</span></td>${to}${rd}${twaCell(st.tw)}<td class="r m k">${pad3(st.mw)}<small class="rng">${st.span>4?crsRange(st):''}</small></td><td class="r m nm">${l.nm.toFixed(2)}</td><td class="r m tm" title="${esc(manTxt(l._man))}">${fmtT(legTime(l))}${l._man&&(l._man.t||l._man.g)?`<small class="rng">${l._man.t?l._man.t+'×↺':''}${l._man.g?' '+l._man.g+'×⤺':''}</small>`:''}</td></tr>`+
-      ds.map((sg,q)=>`<tr data-i="${i}" class="subrow" data-p="${i}" hidden><td class="no">${i+1}${String.fromCharCode(97+q)}</td><td>${esc(subName(l,sg.j))}</td><td></td>${twaCell(sg.tw)}<td class="r m k">${pad3(sg.mw)}</td><td class="r m nm">${sg.nm.toFixed(2)}</td><td class="r m tm">${fmtT(segTime(sg))}</td></tr>`).join('')}).join('');
+    return `<tr data-i="${i}" class="parent multi" title="Klik voor de deelrakken"><td class="no">${i+1}<span class="tg">▸</span></td>${to}${rd}${twaCell(st.tw)}<td class="r m k">${pad3(st.mw)}<small class="rng">${st.span>4?crsRange(st):''}</small></td><td class="r m nm">${l.nm.toFixed(2)}</td><td class="r m tm" title="${esc(manTxt(l._man))}">${fmtT(legTime(l))}${l._man&&(l._man.t||l._man.g)?`<small class="rng">${l._man.t?l._man.t+'×↺':''}${l._man.g?' '+l._man.g+'×⤺':''}</small>`:''}</td>${sailCell(st.tw)}</tr>`+
+      ds.map((sg,q)=>`<tr data-i="${i}" class="subrow" data-p="${i}" hidden><td class="no">${i+1}${String.fromCharCode(97+q)}</td><td>${esc(subName(l,sg.j))}</td><td></td>${twaCell(sg.tw)}<td class="r m k">${pad3(sg.mw)}</td><td class="r m nm">${sg.nm.toFixed(2)}</td><td class="r m tm">${fmtT(segTime(sg))}</td>${sailCell(sg.tw)}</tr>`).join('')}).join('');
   document.querySelectorAll('#lpBody tr.multi').forEach(tr=>tr.onclick=()=>{const open=!tr.classList.contains('open');tr.classList.toggle('open',open);document.querySelectorAll(`#lpBody tr.subrow[data-p="${tr.dataset.i}"]`).forEach(r=>r.hidden=!open)});
   $('lpTot').textContent=total.toFixed(1);const TT=legs.reduce((a,l)=>a+legTime(l),0);$('lpTotT').textContent=fmtT(TT);
   {const sp=spiPlan(legs);$('spiPlan').innerHTML=sp.html;CUR_SPI=sp}
@@ -743,6 +748,7 @@ async function wake(){try{if('wakeLock' in navigator&&document.visibilityState==
 document.addEventListener('visibilitychange',()=>{if(G.on&&document.visibilityState==='visible')wake()});
 function gpsStart(){setTimeout(showResult,0);if(RACE.start&&Date.now()<RACE.start){G.started=false;NAV.leg=0}if(G.demo)demoStop();G.trail=[];G.prev=null;G.vmc=null;G.cdTarget=null;$('gCd').textContent='--:--';hudPanel(true);
   $('gpsHud').hidden=false;$('gpsBtn').setAttribute('aria-pressed','true');
+  if(ST.skGps){G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;gpsEls();$('gpsL').style.display='';$('gTo').textContent='Wacht op GPS van de boot (Signal K)…';try{if(INS&&INS.status()==='uit')INS.connect()}catch(e){}wake();return}
   if(!('geolocation' in navigator)){$('gMsg').textContent='Deze browser geeft geen locatie door.';return}
   if(window.isSecureContext===false){$('gMsg').textContent='Locatie werkt alleen via https (bijv. de GitHub-link).'}
   G.on=true;G.follow=true;G.fitted=false;$('gFollow').setAttribute('aria-pressed','true');NAV.leg=LV.i>=0?LV.i:NAV.leg;
@@ -1122,6 +1128,11 @@ var PRA=initAnalysis({store,llXY,xyLL,boats:BOATS,getLegs:()=>CUR&&CUR.legs,getM
   slotStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   setCourse:m=>{if(m.boat&&BOATS[m.boat]&&m.boat!==ST.boat){$('boatSel').value=m.boat;$('boatSel').onchange({target:$('boatSel')})}if(m.area&&'ABCD'.includes(m.area))ST.area=m.area;if(m.baan&&D.courses[m.baan])ST.baan=+m.baan;show(true)}});
 initRegels({store,setSig5:ms=>{setSig5(ms);try{rbSync()}catch(e){}}});
+var INS;try{INS=initInstruments({store,decl:D.decl,perf:(twa,tws)=>corePerf(BOATS[ST.boat].polar,twa,tws,100).bs,
+  legTwa:i=>{const l=CUR&&CUR.legs[i];if(!l)return null;return twaOf(l.s.length===1?l.s[0].tw:legStats(l).tw).a},
+  curLeg:()=>(G.on?NAV.leg:-1),gpsOn:()=>G.on&&!G.demo,onFix:p=>{try{gpsFix(p)}catch(e){console.error(e)}},isRace:()=>ST.tab==='Race',
+  setWind:(twd,tws)=>{setTwd(twd);$('twsIn').value=tws;setTws()}})}catch(e){console.error('instrumenten',e)}
+store.on(['sailsAboard','boat'],()=>setTimeout(()=>{try{show(false)}catch(e){}},0));
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
 {const t0=ST.tab;ST.tab='Kaart';if(t0!=='Kaart')setTab(t0)}
