@@ -16,7 +16,7 @@ const BASE = process.argv[2]; let fails = 0; const ok = (c, m) => { console.log(
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
     await p.goto(BASE); await p.waitForSelector('#lpBody tr', { state: 'attached' }); await p.waitForTimeout(300);
     const tabs = await p.$$eval('nav.tabs button', bs => bs.map(b => b.textContent.trim()));
-    ok(tabs[0] === 'Race preparation' && tabs[1] === 'Race' && tabs[2] === 'Boot' && tabs[3] === 'Banenboekje' && tabs[4] === 'Post Race Analyses', `${nm}: tabs ${tabs.slice(0, 5).join(' | ')}`);
+    ok(tabs.join('|') === 'Boot|Race preparation|Race|Post Race Analyses|Deelnemers & marges|Uitslagen|Bepalingen|Banenboekje|Uitleg', `${nm}: tabs ${tabs.join(' | ')}`);
     // GPX langs de baan: 5,5 kn, start 11:00 op 11 okt 2026 (lokale tijd)
     const gpx = await p.evaluate(() => {
       const legs = window.__course(); const pts = legs.flatMap((l, i) => (i ? l.slice(1) : l));

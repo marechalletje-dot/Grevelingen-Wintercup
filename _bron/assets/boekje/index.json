@@ -6,63 +6,78 @@
 "pages": [
 {
 "n": 15,
-"t": "Deel 3: startlijn, finish, waarschuwing"
+"t": "Deel 3: startlijn, finish, waarschuwing",
+"file": "p15.b536c807.jpg"
 },
 {
 "n": 16,
-"t": "Banen 51–54 en up/down 02–05"
+"t": "Banen 51–54 en up/down 02–05",
+"file": "p16.2da2edca.jpg"
 },
 {
 "n": 17,
-"t": "Banen 55–58"
+"t": "Banen 55–58",
+"file": "p17.534fdf50.jpg"
 },
 {
 "n": 18,
-"t": "Banen 59–66"
+"t": "Banen 59–66",
+"file": "p18.4dca8521.jpg"
 },
 {
 "n": 19,
-"t": "Banen 67–70"
+"t": "Banen 67–70",
+"file": "p19.e72f3d74.jpg"
 },
 {
 "n": 20,
-"t": "Banen 71–74"
+"t": "Banen 71–74",
+"file": "p20.5b2f4a97.jpg"
 },
 {
 "n": 21,
-"t": "Banen 75–78"
+"t": "Banen 75–78",
+"file": "p21.8529a4ab.jpg"
 },
 {
 "n": 22,
-"t": "Banen 79–82 (startgebied C/D)"
+"t": "Banen 79–82 (startgebied C/D)",
+"file": "p22.5b10a45b.jpg"
 },
 {
 "n": 23,
-"t": "Banen 83–90 (startgebied C/D)"
+"t": "Banen 83–90 (startgebied C/D)",
+"file": "p23.f2f64764.jpg"
 },
 {
 "n": 24,
-"t": "Schema startgebieden"
+"t": "Schema startgebieden",
+"file": "p24.5acdb6cc.jpg"
 },
 {
 "n": 25,
-"t": "Start Toer(+S), startveld A–B"
+"t": "Start Toer(+S), startveld A–B",
+"file": "p25.c9c54323.jpg"
 },
 {
 "n": 26,
-"t": "Start Toer(+S), startveld C–D"
+"t": "Start Toer(+S), startveld C–D",
+"file": "p26.d2c5a47e.jpg"
 },
 {
 "n": 27,
-"t": "Finish bij noordelijke wind"
+"t": "Finish bij noordelijke wind",
+"file": "p27.6a1a0126.jpg"
 },
 {
 "n": 28,
-"t": "Finish bij zuidelijke wind"
+"t": "Finish bij zuidelijke wind",
+"file": "p28.a1b60898.jpg"
 },
 {
 "n": 29,
-"t": "Finish alle banen"
+"t": "Finish alle banen",
+"file": "p29.725faf3b.jpg"
 }
 ],
 "banen": {
@@ -374,5 +389,6 @@
 "w": 0.2,
 "h": 0.373
 }
-}
+},
+"pdfFile": "banenboekje-2026-2027.635aba99.pdf"
 }

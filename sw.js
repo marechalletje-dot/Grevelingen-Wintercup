@@ -1,7 +1,7 @@
 // Wintercup banenkaart - service worker.
 // index.html: altijd eerst vers van het netwerk. App, kaartdata, luchtfoto en PDF-module hebben een vaste naam per versie
 // en worden maar één keer gedownload en daarna uit de cache gebruikt. Kaarttegels (PDOK) worden bewaard zodra ze bekeken zijn.
-const VER = 'd57b6461';
+const VER = 'f7eb74cd';
 const CACHE = 'wintercup-' + VER;
 const ASSETS_CACHE = 'wintercup-assets';
 const TILES = 'wintercup-tiles';

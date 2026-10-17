@@ -33,11 +33,13 @@ aer = put('aerial', 'jpg', aerial)
 data = put('data', 'json', data_raw.encode())
 # banenboekje (v54): pagina's als afbeelding + originele PDF, met hash in de naam (cache per versie)
 BK = json.load(open(R + 'assets/boekje/index.json', encoding='utf-8')); os.makedirs(out + 'boekje')
-def putb(fn):
-    b = open(R + 'assets/boekje/' + fn, 'rb').read(); stem, ext = fn.rsplit('.', 1); n = f'boekje/{stem}.{H(b)}.{ext}'
+# vaste bestandsnaam uit index.json ('file'/'pdfFile'): de bestanden veranderen dan niet per versie
+# (bij overzetten naar de pc kunnen er metadata in de JPG's komen; dat mag geen nieuwe naam opleveren)
+def putb(fn, fixed=None):
+    b = open(R + 'assets/boekje/' + fn, 'rb').read(); stem, ext = fn.rsplit('.', 1); n = 'boekje/' + (fixed or f'{stem}.{H(b)}.{ext}')
     open(out + n, 'wb').write(b); return n
-BK['pdf'] = putb('banenboekje-2026-2027.pdf')
-for pg in BK['pages']: pg['src'] = putb('p%02d.jpg' % pg['n'])
+BK['pdf'] = putb('banenboekje-2026-2027.pdf', BK.pop('pdfFile', None))
+for pg in BK['pages']: pg['src'] = putb('p%02d.jpg' % pg['n'], pg.pop('file', None))
 BK_FILES = [BK['pdf']] + [pg['src'] for pg in BK['pages']]
 app = put('app', 'js', ('window.__IMG=' + json.dumps(dict(img, href=aer)) + ';window.__BOEKJE=' + json.dumps(BK, ensure_ascii=False) + ';\n' + bundle).encode())
 shutil.copy(R + 'assets/jspdf.umd.min.js', out + 'jspdf.umd.min.js')
