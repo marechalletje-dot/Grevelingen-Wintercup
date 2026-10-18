@@ -10,6 +10,8 @@ ESB = os.path.join(subprocess.check_output('npm root -g', shell=True, text=True)
 run(f'{ESB} src/app.js --bundle --format=iife --target=es2019 --minify --legal-comments=none --log-level=warning --outfile=dist/app.bundle.js')
 bundle = open(R + 'dist/app.bundle.js', encoding='utf-8').read()
 page = open(R + 'src/page.html', encoding='utf-8').read()
+# Apple-stijl als laatste laag in de eerste <style>
+page = page.replace('</style>', open(R + 'src/apple.css', encoding='utf-8').read() + '</style>', 1)
 H = lambda b: hashlib.md5(b).hexdigest()[:8]
 LAT0, LON0 = 51.74, 3.95; KX = math.cos(math.radians(LAT0)) * 60
 img = dict(x=round((3.80 - LON0) * KX, 4), y=round(-(51.815 - LAT0) * KY, 4) if (KY := 60) else 0, width=round(0.38 * KX, 4), height=round(0.16 * KY, 4))
@@ -47,7 +49,7 @@ for f in ['manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-i
 PWA = ('<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="apple-touch-icon.png?v=' + H(open(R + 'assets/apple-touch-icon.png', 'rb').read()) + '">\n'
  '<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n'
  '<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Wintercup">\n'
- '<meta name="apple-mobile-web-app-status-bar-style" content="default">\n<meta name="theme-color" content="#2f4060">\n'
+ '<meta name="apple-mobile-web-app-status-bar-style" content="default">\n<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">\n<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">\n'
  f'<link rel="preload" href="{data}" as="fetch" crossorigin>\n<link rel="preload" href="{app}" as="script">\n')
 FAIL = 'Laden mislukt. Controleer je verbinding en herlaad.'
 BUILD = H((html + head_css + app + data + aer + open(R + 'assets/apple-touch-icon.png', 'rb').read().hex()[:64]).encode())

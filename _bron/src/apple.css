@@ -1,0 +1,185 @@
+/* ======================================================================
+   v53 · Apple-stijl (laag bovenop de bestaande stijl; komt als laatste in <style>)
+   Systeemfont met optische maten, neutrale grijzen, één accent uit het Grevelingencup-logo,
+   glas-materialen voor zwevende onderdelen, directe druk-feedback en rustige, onderbreekbare beweging.
+   ====================================================================== */
+:root{
+  --f-disp:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",system-ui,Roboto,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,Roboto,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  /* licht: iOS-achtige gegroepeerde achtergrond, accent = staalblauw uit het logo */
+  --bg:#f2f2f7; --panel:#ffffff; --ink:#1c1c1e; --muted:#6e6e73; --rule:rgba(60,60,67,.16);
+  --accent:#34598f; --accentFg:#ffffff; --accentSoft:rgba(52,89,143,.12);
+  --fair:#2f4060; --route:#34598f;
+  --chip:rgba(118,118,128,.12); --chipOn:#34598f; --chipOnFg:#ffffff;
+  --green:#248a3d; --red:#d70015; --orange:#c93400;
+  --glass:rgba(255,255,255,.74); --glassStrong:rgba(255,255,255,.9); --glassSolid:rgba(255,255,255,.96); --glassEdge:rgba(255,255,255,.6);
+  --shadow-s:0 1px 2px rgba(0,0,0,.05),0 1px 1px rgba(0,0,0,.03);
+  --shadow-m:0 1px 3px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.06);
+  --shadow-l:0 2px 6px rgba(0,0,0,.08),0 16px 40px rgba(0,0,0,.14);
+  --r-s:8px; --r-m:12px; --r-l:16px;
+  --ease-out:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#000000; --panel:#1c1c1e; --ink:#f5f5f7; --muted:#98989f; --rule:rgba(84,84,88,.55);
+  --accent:#86a8e0; --accentFg:#0b1526; --accentSoft:rgba(134,168,224,.18);
+  --fair:#c9d3ec; --route:#86a8e0;
+  --chip:rgba(118,118,128,.24); --chipOn:#86a8e0; --chipOnFg:#0b1526;
+  --green:#30d158; --red:#ff453a; --orange:#ff9f0a;
+  --glass:rgba(30,30,32,.72); --glassStrong:rgba(30,30,32,.9); --glassSolid:rgba(30,30,32,.96); --glassEdge:rgba(255,255,255,.08);
+  --shadow-s:0 1px 2px rgba(0,0,0,.4); --shadow-m:0 2px 10px rgba(0,0,0,.45); --shadow-l:0 10px 40px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{
+  --bg:#000000; --panel:#1c1c1e; --ink:#f5f5f7; --muted:#98989f; --rule:rgba(84,84,88,.55);
+  --accent:#86a8e0; --accentFg:#0b1526; --accentSoft:rgba(134,168,224,.18);
+  --fair:#c9d3ec; --route:#86a8e0;
+  --chip:rgba(118,118,128,.24); --chipOn:#86a8e0; --chipOnFg:#0b1526;
+  --green:#30d158; --red:#ff453a; --orange:#ff9f0a;
+  --glass:rgba(30,30,32,.72); --glassStrong:rgba(30,30,32,.9); --glassSolid:rgba(30,30,32,.96); --glassEdge:rgba(255,255,255,.08);
+  --shadow-s:0 1px 2px rgba(0,0,0,.4); --shadow-m:0 2px 10px rgba(0,0,0,.45); --shadow-l:0 10px 40px rgba(0,0,0,.6)}
+
+/* ---------- typografie ---------- */
+/* de kaart houdt de smalle kaartletter: labels worden in de kaart op maat geplaatst */
+svg#map,svg#paMap{--f-disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;letter-spacing:0}
+body{font-family:var(--f-body);font-size:15px;line-height:1.47;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-optical-sizing:auto}
+header h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.1;letter-spacing:-.025em}
+header .ver{font-size:13px;color:var(--muted);letter-spacing:0}
+.rail h2,.log h2,.pbar,.dl-card h2,.ug-card h2,.wxt th,.pa-kpi small,.pa-h3{font-family:var(--f-body);letter-spacing:.02em}
+.pbar{font-size:12px;font-weight:600;color:var(--muted)}
+.dl-card h2,.ug-card h2{font-size:17px;font-weight:600;letter-spacing:-.015em;text-transform:none;color:var(--ink)}
+.info .big{font-family:var(--f-disp);font-weight:700;letter-spacing:-.03em}
+.kv span:last-child,.lp td.m,.wxt td.num,.pa-kpi b,.gpshud b,#gCd,.rbclock b{font-variant-numeric:tabular-nums}
+.pa-kpi b{font-family:var(--f-disp);font-weight:600;letter-spacing:-.02em}
+.sub,.hint{color:var(--muted)}
+
+/* ---------- kop + tabbalk ---------- */
+header .logo{box-shadow:var(--shadow-s);border-radius:var(--r-m)}
+nav.tabs{position:sticky;top:0;z-index:40;margin-inline:-16px;padding:8px 16px;border:0;gap:2px;
+  background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:0 .5px 0 var(--rule)}
+.tabs button{position:relative;z-index:1;font-family:var(--f-body);font-weight:600;font-size:15px;letter-spacing:-.01em;color:var(--muted);
+  padding:7px 14px;border:0;border-radius:999px;margin:0;transition:color .2s var(--ease-out)}
+.tabs button[aria-selected="true"]{color:var(--ink);border:0}
+.tabs .tabind{position:absolute;z-index:0;top:0;left:0;width:0;height:0;border-radius:999px;background:var(--panel);box-shadow:var(--shadow-m);pointer-events:none;will-change:transform,width}
+.tabs .tabrace,.tabs .tabrace[aria-selected="true"]{color:var(--red);border:0}
+@media (max-width:760px){nav.tabs{position:relative;padding:6px 12px;margin-inline:-16px;scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{font-size:14px;padding:7px 10px}}
+
+/* ---------- kaarten en panelen ---------- */
+.rail,.chart,.log,.dl-card,.ug-card,.legs-panel,.pa-kpi,body.race .racebar{border:0;border-radius:var(--r-l);box-shadow:var(--shadow-m);background:var(--panel)}
+.dl-card,.ug-card{padding:16px 18px}
+.rail{padding:16px}
+.rail > .pnl + .pnl{border-top:.5px solid var(--rule);padding-top:12px}
+.pnl.pmax{border:0;border-radius:20px;box-shadow:var(--shadow-l)}
+.pbar button{border-radius:var(--r-s);color:var(--muted)}
+.wxbox{border:0;background:var(--chip);border-radius:var(--r-m)}
+.wxbox>summary{color:var(--accent);font-family:var(--f-body);font-weight:600}
+.pnl.pdrag{outline:2px solid var(--accent);outline-offset:3px;opacity:.9;box-shadow:var(--shadow-l);transform:scale(1.01)}
+
+/* ---------- knoppen ---------- */
+button,.act,label.act{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:not(:disabled),.act{transition:transform .14s var(--ease-out),background-color .2s var(--ease-out),color .2s var(--ease-out),box-shadow .2s var(--ease-out),opacity .2s}
+button:not(:disabled):active,.act:active{transform:scale(.96);transition-duration:60ms}
+.act,label.act{font-family:var(--f-body);font-weight:600;font-size:15px;letter-spacing:-.01em;border:0;border-radius:var(--r-m);background:var(--accent);color:var(--accentFg);padding:10px 16px}
+.act.alt,label.act.alt{background:var(--accentSoft);color:var(--accent)}
+.racebtn{font-family:var(--f-body);font-weight:600;font-size:17px;letter-spacing:-.01em;border-radius:var(--r-m);background:var(--red);box-shadow:0 4px 14px color-mix(in srgb,var(--red) 35%,transparent)}
+.racebtn.on{background:var(--ink)}
+.chips button,.wind button,.areasel button{font-family:var(--f-body);font-weight:600;border-radius:var(--r-s);background:var(--chip);color:var(--ink)}
+.chips button{font-size:15px}.areasel button{font-size:16px}.wind button{font-size:13px}
+.chips button:hover{outline:0;background:color-mix(in srgb,var(--chip) 100%,var(--accentSoft))}
+.chips button[aria-pressed="true"],.wind button[aria-pressed="true"],.areasel button[aria-pressed="true"]{background:var(--chipOn);color:var(--chipOnFg);box-shadow:var(--shadow-s)}
+.ugrp button,.sig5 button,body.race .racebar .rbstart button,.gpshud .btns button,.gpshud .pbtns button,.gpshud .res button,.fed button{font-family:var(--f-body);font-weight:600;border:0;background:var(--chip);color:var(--ink);border-radius:var(--r-s)}
+.ugrp button[aria-pressed="true"]{background:var(--chipOn);color:var(--chipOnFg)}
+body.race .racebar .rbstart button#rbSigNow{background:var(--accent);color:var(--accentFg)}
+.gpshud .btns button[aria-pressed="true"],.gpshud .pbtns button[aria-pressed="true"]{background:var(--accent);color:var(--accentFg)}
+.spipop button,.nxtpop button{font-family:var(--f-body);font-weight:600;border-radius:var(--r-m);background:var(--accent);color:var(--accentFg)}
+.gpshud .race button,.rbclock button{font-family:var(--f-body);font-weight:600;border-radius:var(--r-s);background:var(--red)}
+.lnk{color:var(--accent);text-decoration:none}
+:focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px}
+
+/* ---------- invoer ---------- */
+.twd input[type=number],.twd input[type=time],table.dl input[type=number],.dl-grid select,.dl-grid input,.wb-plan select,body.race .racebar .rbstart input,.skbox .skrow input,.pa-slog input,.pa-slog select,select.boatsel,#boatSel{
+  border:0;border-radius:var(--r-s);background:var(--chip);color:var(--ink);font-family:var(--f-body);padding:6px 8px}
+.twd input[type=number],.twd input[type=time]{font-variant-numeric:tabular-nums}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0}
+input[type=range]{accent-color:var(--accent)!important}
+input[type=checkbox]{accent-color:var(--accent)}
+
+/* ---------- kaart en zwevende onderdelen: glas ---------- */
+.chart{overflow:hidden}
+.tools button{border:0;border-radius:var(--r-m);background:var(--glass);color:var(--ink);font-family:var(--f-body);font-weight:600;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:var(--shadow-m),inset 0 .5px 0 var(--glassEdge)}
+.tools button.wide{font-size:13px}
+.tools button[aria-pressed="true"]{background:var(--accent);color:var(--accentFg)}
+.stylebar,.legnav{border:0!important;border-radius:var(--r-m)!important;background:var(--glass)!important;-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:var(--shadow-m);overflow:hidden}
+.stylebar button,.legnav button{font-family:var(--f-body);font-weight:600}
+.stylebar button+button,.legnav button+button{border-left:.5px solid var(--rule)}
+.stylebar button[aria-pressed="true"]{background:var(--accent);color:var(--accentFg)}
+.gpshud{border:0;border-radius:var(--r-l);background:var(--glassStrong);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:var(--shadow-l),inset 0 .5px 0 var(--glassEdge)}
+.gpshud #gCd{font-family:var(--f-disp);font-weight:700;letter-spacing:-.03em}
+.gpshud .gr b,.gpshud .nav3 b,.gpshud .ins b{font-family:var(--f-disp);font-weight:600;letter-spacing:-.02em}
+.legpop,.gdinfo,.leginfo{border:0!important;border-radius:var(--r-l)!important;background:var(--glassStrong)!important;-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:var(--shadow-l)!important}
+.windind .wi-c{fill:var(--glassStrong);stroke:var(--rule)}
+.windind .wi-l,.windind .wi-t{stroke:var(--accent)}.windind .wi-h{fill:var(--accent)}
+.windind .wi-txt{background:var(--glassStrong);border-radius:6px;padding:1px 5px;font-family:var(--f-body);font-weight:600}
+@media (min-width:761px){body.race .legs-panel{background:var(--glassStrong);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:var(--shadow-l)}}
+.spipop,.nxtpop{border:0;border-radius:20px;background:var(--glassSolid);-webkit-backdrop-filter:saturate(180%) blur(30px);backdrop-filter:saturate(180%) blur(30px);box-shadow:var(--shadow-l),0 0 0 3px var(--pop,var(--accent))}
+.spipop{--pop:var(--orange)}.nxtpop{--pop:var(--accent)}
+.spipop .sp-k,.spipop .sp-side,.nxtpop .nx-t{font-family:var(--f-disp);letter-spacing:-.03em}
+.nxtpop .nx-k{font-family:var(--f-disp);font-weight:700;letter-spacing:-.03em;color:var(--accent)}
+.spipop .sp-k{color:var(--orange)}
+body.race .racebar{border-radius:var(--r-l)}
+body.race .racebar label,body.race .racebar .rbstart{font-family:var(--f-body);font-weight:600}
+body.race .racebar b{font-family:var(--f-disp);font-weight:600;letter-spacing:-.02em}
+.rbclock{border-radius:var(--r-m);background:var(--fair);font-family:var(--f-body)}
+.rbclock b{font-family:var(--f-disp);letter-spacing:-.03em}
+
+/* ---------- tabellen ---------- */
+.lp th,.lp td,.wxt td{border-bottom:.5px solid var(--rule)}
+.wxt th{border-bottom:.5px solid var(--rule);font-size:11px;font-weight:600;letter-spacing:.03em}
+.lp th{font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--muted);background:inherit}
+.lp td.no{font-family:var(--f-body);font-weight:600}
+#lpBody tr.cur td{background:color-mix(in srgb,var(--orange) 16%,var(--panel));color:var(--ink)}
+#lpBody tr.cur td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+.lp tr.hl td,.lp tr:hover td{background:color-mix(in srgb,var(--accentSoft) 60%,transparent)}
+.pill{font-weight:600;border-radius:999px}
+.pill.via{background:var(--accentSoft);color:var(--accent)}
+
+/* ---------- beweging ---------- */
+@keyframes wcIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes wcPop{from{opacity:0;transform:var(--pop-from,translate(-50%,-50%)) scale(.92);filter:blur(6px)}to{opacity:1;transform:var(--pop-from,translate(-50%,-50%)) scale(1);filter:none}}
+@keyframes wcFade{from{opacity:0}to{opacity:1}}
+/* tabs: alleen opacity (een transform op de tab zou position:fixed-panelen binnenin breken) */
+#tabKaart:not([hidden]),#tabAnalyse:not([hidden]),#tabDeeln:not([hidden]),#tabUitslag:not([hidden]),#tabRegels:not([hidden]),#tabUitleg:not([hidden]){animation:wcFade .28s var(--ease-out)}
+.spipop:not([hidden]){animation:wcPop .38s var(--ease-out) both}
+.nxtpop:not([hidden]){--pop-from:translateX(-50%);animation:wcPop .38s var(--ease-out) both}
+.legpop:not([hidden]),.gpshud:not([hidden]){animation:wcFade .25s var(--ease-out) both}
+details[open] > :not(summary):not(.inner){animation:wcFade .24s var(--ease-out)}
+#paOut:not([hidden]){animation:wcFade .3s var(--ease-out)}
+
+/* ---------- toegankelijkheid ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  button:not(:disabled):active,.act:active{transform:none}
+}
+@media (prefers-reduced-transparency:reduce){
+  nav.tabs,.tools button,.stylebar,.legnav,.gpshud,.legpop,.gdinfo,.leginfo,.spipop,.nxtpop,body.race .legs-panel{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--panel)!important}
+  nav.tabs{background:var(--bg)!important}
+}
+@media (prefers-contrast:more){
+  :root{--rule:rgba(60,60,67,.5);--muted:#3a3a3c}
+  .rail,.chart,.log,.dl-card,.ug-card,.legs-panel,.pa-kpi,.gpshud,.tools button{outline:1px solid var(--ink)}
+}
+
+/* ---------- fijnafstelling ---------- */
+.gpshud .nav3>div{border:0;border-radius:var(--r-s);background:var(--chip)}
+.gpshud .nav3 small{font-family:var(--f-body);font-weight:600;letter-spacing:.04em;color:var(--accent)}
+.gpshud .nav3 b{font-family:var(--f-disp);font-weight:600;letter-spacing:-.02em}
+@media (max-width:760px){
+  header h1{font-size:22px;letter-spacing:-.02em}
+  .lp th{font-size:9.5px;letter-spacing:0}
+  .lp col.c-sl{width:3.4em}.lp .spill{font-size:10px;padding:0 3px}
+  body.race .racebar .rbstart{flex-wrap:wrap}
+}
+.dl-card.pnl.pcol,.ug-card.pnl.pcol{padding-block:10px}
+/* laylines zijn alleen informatie: ze mogen het slepen van boei/gate niet blokkeren */
+#map .layl,#map .laylab{pointer-events:none}

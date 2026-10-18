@@ -25,6 +25,7 @@ import { validPolar } from './core/polarfile.js';
 import { initBoat } from './ui/boat.js';
 import { initBoekje } from './ui/boekje.js';
 import { initInstruments } from './ui/instruments.js';
+import { initMotion } from './ui/motion.js';
 
 const D=window.__D;
 // Tijdelijke baanwijzigingen uit de wedstrijdinformatie: na 'until' geldt weer de baan uit het boekje.
@@ -1145,6 +1146,7 @@ var BOEKJE;try{BOEKJE=initBoekje({store})}catch(e){console.error('banenboekje',e
 var BOAT;try{BOAT=initBoat({store,boats:BOATS,selectBoat:b=>{if(!BOATS[b]||b===ST.boat)return;$('boatSel').value=b;$('boatSel').onchange({target:$('boatSel')})}})}catch(e){console.error('boot',e)}
 // eigen polar of chart gewijzigd (tab Boot): rakkentabel, zeiladvies, laylines en simulatie opnieuw
 store.on(['polarCustom','sailChart'],()=>setTimeout(()=>{try{show(false)}catch(e){}try{INS&&INS.refresh()}catch(e){}try{WXU.refresh&&WXU.refresh()}catch(e){}try{$('polSrc').textContent=(ST.polarCustom||{})[ST.boat]?'eigen polar ('+ST.polarCustom[ST.boat].name+')':BOATS[ST.boat].polarSrc}catch(e){}},0));
+try{initMotion()}catch(e){console.error('motion',e)}
 var PANELS=initPanels({store,onResize:()=>{try{applyVB()}catch(e){}}});
 $('layReset').onclick=()=>{if(confirm('Alle vakken terug naar de standaardindeling?'))PANELS.reset()};
 {const t0=ST.tab;ST.tab='Kaart';if(t0!=='Kaart')setTab(t0)}
