@@ -13,6 +13,7 @@ import { BOATS, FLEETS, CLASSES, FLEET_SRC } from './data/boats.js';
 import { initPanels } from './ui/panels.js';
 import { initRegels } from './ui/regels.js';
 import { initUitslagen } from './ui/uitslagen.js';
+import { initMededelingen } from './ui/mededelingen.js';
 import { initWx } from './ui/wx.js';
 import { initWxField } from './ui/wxfield.js';
 import { initAnalysis, recordFix, savePreSim } from './ui/analysis.js';
@@ -52,6 +53,7 @@ const WN=WIND_NAMES;
 function setSpi(v){v=Math.round(+v);if(isNaN(v))return;v=Math.max(90,Math.min(180,v));ST.spiMin=v;document.getElementById('spiIn').value=v;document.getElementById('spiRange').value=v;const L=document.getElementById('spiLeg');if(L)L.textContent=`Spinnaker bij TWA ${v}°–180°`;show(false)}
 const svg=document.getElementById('map');
 const $=id=>document.getElementById(id);
+{const e=document.getElementById('wcBuild');if(e)e.textContent=document.documentElement.getAttribute('data-build')||'lokaal'}  // v61: versielabel in Uitleg
 const NS='http://www.w3.org/2000/svg';
 function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
 $('water').setAttribute('d',D.water);
@@ -1018,7 +1020,7 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Wind','Baan','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Wind','Baan','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Wind','Baan','Med','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Wind','Baan','Med','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);try{drawLaylines()}catch(e){}
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
@@ -1122,7 +1124,7 @@ $('dlReset').onclick=()=>{FLEET=FLEET0.map(x=>Object.assign({on:true},x));$('dlM
 
 if(!fits(ST.baan)&&!ST.allC){const k=keys.find(n=>fits(n)&&D.courses[n].pair.includes(ST.area));if(k)ST.baan=k}
 fitTo(ALL,0);show(true);
-initUitslagen({store});
+initUitslagen({store});initMededelingen({store});
 var WF;try{WF=initWxField({store,svg,llXY,xyLL,getK:()=>K,getDay:()=>($('wxDay')&&$('wxDay').value)||'',
   getStart:day=>{const [y,m,d]=day.split('-').map(Number);if(RACE.start){const r=new Date(RACE.start);if(r.getFullYear()===y&&r.getMonth()===m-1&&r.getDate()===d)return RACE.start}const st=slotTimes(ST.wbPos).start;return new Date(y,m-1,d,Math.floor(st/60),st%60).getTime()},
   isWater:(x,y)=>{const w=$('water');try{return w.isPointInFill(new DOMPoint(x,y))}catch(e){try{const q=svg.createSVGPoint();q.x=x;q.y=y;return w.isPointInFill(q)}catch(e2){return true}}}})}

@@ -10,6 +10,11 @@ ESB = os.path.join(subprocess.check_output('npm root -g', shell=True, text=True)
 run(f'{ESB} src/app.js --bundle --format=iife --target=es2019 --minify --legal-comments=none --log-level=warning --outfile=dist/app.bundle.js')
 bundle = open(R + 'dist/app.bundle.js', encoding='utf-8').read()
 page = open(R + 'src/page.html', encoding='utf-8').read()
+WCV = open(R + 'VERSION', encoding='utf-8').read().strip() if os.path.exists(R + 'VERSION') else 'dev'
+page = page.replace('__WC_VERSION__', WCV)
+import datetime as _dt
+_n = _dt.date.today(); _MND = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec']
+page = page.replace('__WC_VERSION_NUM__', WCV.lstrip('vV')).replace('__WC_DATE__', f'{_n.day} {_MND[_n.month-1]} {_n.year}')
 # Apple-stijl als laatste laag in de eerste <style>
 page = page.replace('</style>', open(R + 'src/apple.css', encoding='utf-8').read() + '</style>', 1)
 H = lambda b: hashlib.md5(b).hexdigest()[:8]

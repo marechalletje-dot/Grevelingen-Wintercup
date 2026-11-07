@@ -8,6 +8,8 @@ B = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(B)
 args = [a for a in sys.argv[1:] if not a.startswith('--')]; push = '--no-push' not in sys.argv
 msg = args[0] if args else None
 if push and not msg: sys.exit('Geef een commit-omschrijving mee, bv.: python3 _bron/deploy.py "v53: ..."')
+_m = re.match(r'\s*(v\d+)', msg or '')
+if _m: open(os.path.join(B, 'VERSION'), 'w', encoding='utf-8').write(_m.group(1) + '\n')   # versielabel in de app
 def run(cmd, cwd=ROOT): r = subprocess.run(cmd, shell=True, cwd=cwd); r.returncode and sys.exit('mislukt: ' + cmd)
 
 # vorige versie (uit de huidige index.html) onthouden
