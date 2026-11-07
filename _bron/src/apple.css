@@ -177,7 +177,16 @@ details[open] > :not(summary):not(.inner){animation:wcFade .24s var(--ease-out)}
 @media (max-width:760px){
   header h1{font-size:22px;letter-spacing:-.02em}
   .lp th{font-size:9.5px;letter-spacing:0}
-  .lp col.c-sl{width:3.4em}.lp .spill{font-size:10px;padding:0 3px}
+  /* v59: rakkentabel op telefoon. De nm-kolom is verborgen: de <col> moet ook weg, anders schuiven Tijd en Zeil een kolom op en overlappen ze */
+  .lp col.c-nm{display:none}
+  .lp{font-size:11.5px}
+  .lp col.c-no{width:1.9em}.lp col.c-rd{width:3.7em}.lp col.c-twa{width:2.9em}.lp col.c-pos{width:2.4em}.lp col.c-k{width:4em}.lp col.c-tm{width:3.5em}.lp col.c-sl{width:4.7em}
+  .lp th,.lp td{padding:3px 2px}
+  .lp td.k small.rng,.lp td.tm small.rng{display:block;font-family:var(--f-body);font-size:8.5px;letter-spacing:-.02em;white-space:nowrap}
+  .lp td:nth-child(3) .pos{font-size:8.5px;letter-spacing:-.02em;line-height:1.1}
+  .lp th:nth-child(4){padding-left:6px}
+  .lp td.sl{overflow:hidden}
+  .lp .spill{font-size:9.5px;padding:0 3px;white-space:nowrap;max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:clip;vertical-align:middle}
   body.race .racebar .rbstart{flex-wrap:wrap}
 }
 .dl-card.pnl.pcol,.ug-card.pnl.pcol{padding-block:10px}
