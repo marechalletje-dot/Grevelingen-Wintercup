@@ -81,9 +81,11 @@ for(const k in D.areas){const [x,y]=D.areas[k];const g=el('g',{'data-a':k},$('ar
 
 let K=0.01;
 function LZ(k){return Math.min(1.7,Math.max(1,Math.sqrt(0.0095/k)))}
+let FITPEND=null;
 function applyVB(kOver){
   svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   const r=svg.getBoundingClientRect();
+  if(!r.width||!r.height)return;   // v58: kaart verborgen (tab Wind/Baan/Boot): niet tekenen, gebeurt bij tonen
   const k=kOver||Math.max(vb.w/r.width,vb.h/r.height);K=k;
   const st=$('dyn')||el('style',{id:'dyn'},svg);
   const showB=k<0.006;
@@ -147,7 +149,7 @@ function freeArea(){const r=svg.getBoundingClientRect();const A={x:0,y:0,w:r.wid
   const hr=H.right-r.left+g,hb=H.bottom-r.top+g,tl=T?T.left-r.left-g:r.width,tb=T?T.bottom-r.top+g:0;
   const wb=$('wfBar');const bot=wb&&!wb.hidden&&wb.offsetHeight?wb.getBoundingClientRect().top-r.top-g:r.height;// windveld-balk onderin
   return [{x:hr,y:0,w:Math.max(1,tl-hr),h:Math.max(1,bot)},{x:0,y:Math.max(hb,tb),w:r.width,h:Math.max(1,bot-Math.max(hb,tb))}]}
-function fitTo(b,pad=0.12){const r=svg.getBoundingClientRect();const ar=r.width/r.height;let w=b.w*(1+pad*2),h=b.h*(1+pad*2);
+function fitTo(b,pad=0.12){const r=svg.getBoundingClientRect();if(!r.width||!r.height){FITPEND=[b,pad];return}FITPEND=null;const ar=r.width/r.height;let w=b.w*(1+pad*2),h=b.h*(1+pad*2);
   const F=freeArea();if(Array.isArray(F)){// beste deelgebied: grootste schaal
     {const q=Math.max(pad,0.2);b={...b,w:b.w*1.12};w=b.w*(1+q*2);h=b.h*(1+q*2)}// ruimte voor boeinamen (die staan rechts van de boei)
     let best=null;for(const a of F){const s=Math.min(a.w/w,a.h/h);if(!best||s>best.s)best={s,a}}const {s,a}=best;
@@ -679,7 +681,7 @@ function showResult(){if(!RACE.fin){$('raceRes').hidden=true;return}const el=(RA
 $('finBtn').onclick=()=>{if(!RACE.start)return;RACE.fin=Date.now();saveRace();$('dlOver').value=((RACE.fin-RACE.start)/60000).toFixed(2);beep(1,660,.8);showResult();try{renderFleet()}catch(e){}};
 setInterval(raceTick,250);
 function raceMode(on){document.body.classList.toggle('race',on);try{PANELS&&PANELS.apply()}catch(e){}try{applyVB()}catch(e){}}
-$('toBoot').onclick=()=>setTab('Boot');
+$('toKaart').onclick=()=>{setTab('Kaart');setTimeout(()=>{try{scrollTo(0,0)}catch(e){}},30)};
 $('toBoekje').onclick=()=>{setTab('Boekje');setTimeout(()=>{try{$('tabBoekje').scrollIntoView({block:'start'})}catch(e){}},30)};
 $('raceBtn').onclick=()=>{setTab('Race');setTimeout(()=>{$('chart').scrollIntoView({block:'start'})},50)};
 function rbSync(){$('rbTwdR').value=Math.round(ST.twd/5)*5%360;$('rbTwd').textContent=pad3(ST.twd);$('rbTwsR').value=ST.tws;$('rbTws').textContent=ST.tws+' kn';$('rbEffR').value=ST.eff;$('rbEff').textContent=ST.eff+'%';$('rbSig5').value=RACE.start?new Date(RACE.start-300000).toTimeString().slice(0,8):''}
@@ -1015,12 +1017,12 @@ async function makeGpx(){
 $('gpxBtn').onclick=makeGpx;
 // ---------- tabs ----------
 let PREVSTYLE=null;
-function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
+function setTab(t){const sec=t==='Race'?'Kaart':t;['Kaart','Boot','Wind','Baan','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>{$('tab'+k).hidden=k!==sec});['Kaart','Race','Boot','Wind','Baan','Boekje','Analyse','Deeln','Uitslag','Regels','Uitleg'].forEach(k=>$('tb'+k).setAttribute('aria-selected',k===t?'true':'false'));
   const prev=ST.tab;ST.tab=t;
   raceMode(t==='Race');if(t!=='Race')mapOnly(false);try{drawLaylines()}catch(e){}
   if(t!=='Race'){$('legPop').hidden=true;$('legBtn').setAttribute('aria-pressed','false');if(prev==='Race'&&PREVSTYLE&&PREVSTYLE!=='chart')setStyle(PREVSTYLE)}
-  if(t==='Race'){if(prev!=='Race'){PREVSTYLE=ST.mapStyle;if(ST.mapStyle!=='chart')setStyle('chart')}unlockAudio();const lp=$('legsPanel');lp.open=true;if(!G.on)gpsStart();rbSync();setTimeout(()=>{applyVB();markCurLeg(true)},30)}
-  else if(t==='Kaart'){if(G.on)gpsStop();applyVB()}
+  if(t==='Race'){if(prev!=='Race'){PREVSTYLE=ST.mapStyle;if(ST.mapStyle!=='chart')setStyle('chart')}unlockAudio();const lp=$('legsPanel');lp.open=true;if(!G.on)gpsStart();rbSync();setTimeout(()=>{if(FITPEND)fitTo(...FITPEND);applyVB();markCurLeg(true)},30)}
+  else if(t==='Kaart'){if(G.on)gpsStop();if(FITPEND)fitTo(...FITPEND);applyVB()}
   else if(t==='Deeln')renderFleet()
   else if(t==='Analyse'){if(G.on)gpsStop();setTimeout(()=>{try{PRA.render()}catch(e){console.error('analyse',e)}},0)}
   else{if(G.on)gpsStop()}

@@ -3,14 +3,6 @@
 // - Grootte: sleep aan het hoekje rechtsonder (dubbelklik = terug naar standaard). ⤢ = schermvullend (Esc of nogmaals ⤢ = terug).
 // - De indeling wordt per schermtype (telefoon / groot scherm) bewaard in de centrale store (sleutel 'layout').
 export const PANELS = [
-  { id: 'boot',    sel: '.rail > .r-wind',   title: 'Boot & wind' },
-  { id: 'baan',    sel: '.rail > .r-course', title: 'Kies baan' },
-  { id: 'gebied',  sel: '.rail > .r-area',   title: 'Startgebied' },
-  { id: 'startgate', sel: '.rail > .r-sg',   title: 'Start & gate' },
-  { id: 'info',    sel: '#info',             title: 'Baaninfo' },
-  { id: 'stem',    sel: '.rail > .r-voice',  title: 'Stem' },
-  { id: 'legenda', sel: '#legendBox',        title: 'Legenda en lagen', mobileClosed: true },
-  { id: 'export',  sel: '.rail > .r-actions', title: 'Export' },
   { id: 'kaart',   sel: '#chart',            title: 'Kaart', chart: true, wrap: true },
   { id: 'rakpnl',  sel: '#legsPanel',        title: 'Rakken', noCollapse: true },
   { id: 'hud',     sel: '#gpsHud',           title: 'GPS', keep: '#gCdBox' },
@@ -32,7 +24,7 @@ export const PANELS = [
   { id: 'ug2',     sel: '#tabUitleg > .ug-card:nth-of-type(2)', title: 'Achtergrond: banenkaart' },
   { id: 'ug3',     sel: '#tabUitleg > .ug-card:nth-of-type(3)', title: 'Achtergrond: deelnemers' },
 ];
-const MOBILE_ORDER = ['boot', 'baan', 'gebied', 'kaart', 'startgate', 'info', 'stem', 'export', 'legenda'];
+const MOBILE_ORDER = [];   // v58: geen linkerkolom meer in Race preparation
 const clone = o => JSON.parse(JSON.stringify(o || {}));
 
 export function initPanels({ store, onResize = () => {} }) {
@@ -93,9 +85,8 @@ export function initPanels({ store, onResize = () => {} }) {
     slots.forEach((s, j) => { kids[s] = want[j]; }); kids.forEach(k => c.appendChild(k));
   }
   function placeChart() {
-    const chart = els.kaart; if (!chart || !rail || !main) return;
-    if (mode() === 'm' && !isRace()) { if (chart.parentElement !== rail) rail.insertBefore(chart, els.gebied ? els.gebied.nextSibling : null); }
-    else if (chart.parentElement !== main) main.appendChild(chart);
+    const chart = els.kaart; if (!chart || !main) return;
+    if (chart.parentElement !== main) main.appendChild(chart);
   }
 
   // ---------- toepassen ----------

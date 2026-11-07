@@ -102,7 +102,7 @@ export function initAnalysis(o) {
     const st = m.start && isoOf(m.start) === d ? m.start : slotStart(d);
     $('paStart').value = hms(st);
     const cur = getMeta();
-    $('paCourse').innerHTML = `Baan <b>${esc(cur.baan)}</b> · startgebied ${esc(cur.area)} · ${esc(boats[cur.boat] ? boats[cur.boat].name : cur.boat)} <span class="sub">(uit Race preparation)</span>`;
+    $('paCourse').innerHTML = `Baan <b>${esc(cur.baan)}</b> · startgebied ${esc(cur.area)} · ${esc(boats[cur.boat] ? boats[cur.boat].name : cur.boat)} <span class="sub">(uit de tab Baan)</span>`;
     const differs = m.baan && (+m.baan !== +cur.baan || (m.area && m.area !== cur.area) || (m.boat && m.boat !== cur.boat));
     $('paUseCourse').hidden = !differs; if (differs) $('paUseCourse').textContent = `Gebruik baan ${m.baan}${m.area ? ' / ' + m.area : ''}${m.boat && boats[m.boat] ? ' · ' + boats[m.boat].name : ''} van deze race`;
     A.meta = m;

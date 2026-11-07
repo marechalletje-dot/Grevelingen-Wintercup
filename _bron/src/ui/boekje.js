@@ -41,8 +41,8 @@ export function initBoekje(o) {
   }
   $('bkBaan').onchange = () => { const v = Math.round(+$('bkBaan').value); if (v > 0) { baan = v; renderBaan(); } };
   $('bkCur').onclick = () => { baan = ST.baan; renderBaan(); };
-  store.on(['baan'], () => { baan = ST.baan; renderBaan(); $('bkCur').textContent = `Baan uit Race preparation (${ST.baan})`; });
-  $('bkCur').textContent = `Baan uit Race preparation (${ST.baan})`;
+  store.on(['baan'], () => { baan = ST.baan; renderBaan(); $('bkCur').textContent = `Baan uit de tab Baan (${ST.baan})`; });
+  $('bkCur').textContent = `Baan uit de tab Baan (${ST.baan})`;
 
   // offline bewaren: alle pagina's en de PDF ophalen (de service worker bewaart ze)
   const files = [BK.pdf, ...BK.pages.map(p => p.src)];
