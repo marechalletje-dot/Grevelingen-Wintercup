@@ -85,7 +85,7 @@ let FITPEND=null;
 function applyVB(kOver){
   svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   const r=svg.getBoundingClientRect();
-  if(!r.width||!r.height)return;   // v58: kaart verborgen (tab Wind/Baan/Boot): niet tekenen, gebeurt bij tonen
+  if(!kOver&&(!r.width||!r.height))return;   // v58: kaart verborgen (tab Wind/Baan/Boot): niet tekenen, gebeurt bij tonen. v59: met vaste schaal (PDF-export) wel tekenen
   const k=kOver||Math.max(vb.w/r.width,vb.h/r.height);K=k;
   const st=$('dyn')||el('style',{id:'dyn'},svg);
   const showB=k<0.006;
@@ -924,6 +924,7 @@ async function makePdf(){
     cols.forEach(cl=>doc.text(cl.t.toUpperCase(),TX+cl.x+(cl.r?cl.w:0),y,{align:cl.r?'right':'left'}));
     y+=2;doc.setDrawColor(200,200,200);doc.setLineWidth(0.2);doc.line(TX,y,TX+TW,y);y+=4.6;
     const rowH=6.4;
+    const fitPos=(txt,x,yy,maxW,fs)=>{doc.setFontSize(fs);const w=doc.getTextWidth(txt);if(w>maxW)doc.setFontSize(Math.max(5.2,fs*maxW/w));doc.text(txt,x,yy)};  // v59: tekst Koerstype past in de kolom
     const cell=(cl,v,opt={})=>{doc.text(String(v),TX+cl.x+(cl.r?cl.w:0),y,{align:cl.r?'right':'left',...opt})};
     const nRows=legs.reduce((a,l)=>a+1+(l.via.length?0.6:0)+(l.s.length>1?dispSegs(l).length*0.8:0),0);const showSub=nRows*6.6<(PH-M-y-40);
     legs.forEach((l,i)=>{
@@ -934,10 +935,10 @@ async function makePdf(){
       doc.setFont('helvetica','normal');cell(cols[1],doc.splitTextToSize(name,36)[0]);
       if(sd){if(sd==='SB')doc.setTextColor(31,138,59);else doc.setTextColor(200,35,44);doc.setFont('helvetica','bold');cell(cols[2],pass?'pass. '+sd:sd);doc.setFont('helvetica','normal');doc.setTextColor(29,42,51)}
       else{doc.setFontSize(7.5);doc.setTextColor(93,107,115);cell(cols[2],i===0?'gate':'finish');doc.setFontSize(9.5);doc.setTextColor(29,42,51)}
-      {const st=one?{mw:l.s[0].mw,tw:l.s[0].tw,span:0}:legStats(l);const t=twaOf(st.tw);doc.setFont('courier','normal');cell(cols[3],Math.round(t.a)+'°');doc.setFont('helvetica','normal');pdfBoat(doc,TX+cols[4].x+2,y-1.2,st.tw);doc.setFontSize(8.5);doc.text(pos(t.a),TX+cols[4].x+5,y);doc.setFontSize(9.5);doc.setFont('courier','normal');cell(cols[5],pad3(st.mw));if(!one&&st.span>4){doc.setFontSize(6.5);doc.setTextColor(93,107,115);doc.text(crsRange(st),TX+cols[5].x+cols[5].w,y+2.6,{align:'right'});doc.setTextColor(29,42,51);doc.setFontSize(9.5)}}
+      {const st=one?{mw:l.s[0].mw,tw:l.s[0].tw,span:0}:legStats(l);const t=twaOf(st.tw);doc.setFont('courier','normal');cell(cols[3],Math.round(t.a)+'°');doc.setFont('helvetica','normal');pdfBoat(doc,TX+cols[4].x+2,y-1.2,st.tw);fitPos(pos(t.a),TX+cols[4].x+4.8,y,cols[4].w-5.2,8.5);doc.setFontSize(9.5);doc.setFont('courier','normal');cell(cols[5],pad3(st.mw));if(!one&&st.span>4){doc.setFontSize(6.5);doc.setTextColor(93,107,115);doc.text(crsRange(st),TX+cols[5].x+cols[5].w,y+2.6,{align:'right'});doc.setTextColor(29,42,51);doc.setFontSize(9.5)}}
       doc.setFont('courier','normal');cell(cols[6],l.nm.toFixed(2));cell(cols[7],fmtT(legTime(l)));doc.setFont('helvetica','normal');
       if(l.via.length){y+=3.6;doc.setFontSize(7.5);doc.setTextColor(31,95,168);doc.text('via '+l.via.join(', '),TX+cols[1].x,y);doc.setTextColor(29,42,51)}
-      if(!one&&showSub){dispSegs(l).forEach((sg,q)=>{const j=sg.j;y+=5.2;const t=twaOf(sg.tw);doc.setFontSize(8.5);doc.setTextColor(93,107,115);cell(cols[0],(i+1)+String.fromCharCode(97+q));cell(cols[1],subName(l,j).replace('→','>'));doc.setTextColor(29,42,51);doc.setFont('courier','normal');cell(cols[3],Math.round(t.a)+'°');doc.setFont('helvetica','normal');pdfBoat(doc,TX+cols[4].x+2,y-1.2,sg.tw);doc.text(pos(t.a),TX+cols[4].x+5,y);doc.setFont('courier','normal');cell(cols[5],pad3(sg.mw));cell(cols[6],sg.nm.toFixed(2));cell(cols[7],fmtT(segTime(sg)));doc.setFont('helvetica','normal')})}
+      if(!one&&showSub){dispSegs(l).forEach((sg,q)=>{const j=sg.j;y+=5.2;const t=twaOf(sg.tw);doc.setFontSize(8.5);doc.setTextColor(93,107,115);cell(cols[0],(i+1)+String.fromCharCode(97+q));cell(cols[1],subName(l,j).replace('→','>'));doc.setTextColor(29,42,51);doc.setFont('courier','normal');cell(cols[3],Math.round(t.a)+'°');doc.setFont('helvetica','normal');pdfBoat(doc,TX+cols[4].x+2,y-1.2,sg.tw);fitPos(pos(t.a),TX+cols[4].x+4.8,y,cols[4].w-5.2,8.5);doc.setFont('courier','normal');cell(cols[5],pad3(sg.mw));cell(cols[6],sg.nm.toFixed(2));cell(cols[7],fmtT(segTime(sg)));doc.setFont('helvetica','normal')})}
       y+=2.2;doc.setDrawColor(225,225,225);doc.line(TX,y,TX+TW,y);y+=4.2;
     });
     doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('Totaal',TX+cols[1].x,y);doc.setFont('courier','bold');cell(cols[6],total.toFixed(1));cell(cols[7],fmtT(legs.reduce((a,l)=>a+legTime(l),0)));y+=8;
