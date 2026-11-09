@@ -29,9 +29,11 @@ export function standings(group, raceIds) {
     b.gross = sailed.reduce((a, id) => a + b.pts[id].p, 0);
     b.net = b.gross - list.slice(0, nd).reduce((a, x) => a + x.p, 0);
   }
-  // Rangschikking: laagste netto; bij gelijke stand beslist de laatste race (vereenvoudigd t.o.v. RvW A8).
+  // Rangschikking: laagste netto; bij gelijke stand RRS A8.1 (beste scores eerst vergelijken), dan A8.2 (laatste race), dan naam.
   const last = sailed[sailed.length - 1];
-  const arr = [...boats.values()].sort((a, c) => a.net - c.net || (last ? a.pts[last].p - c.pts[last].p : 0) || a.boat.localeCompare(c.boat));
+  const best = b => sailed.map(id => b.pts[id].p).sort((x, y) => x - y);
+  const cmpBest = (a, c) => { const x = best(a), y = best(c); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+  const arr = [...boats.values()].sort((a, c) => a.net - c.net || cmpBest(a, c) || (last ? a.pts[last].p - c.pts[last].p : 0) || a.boat.localeCompare(c.boat));
   arr.forEach((b, i) => { b.rank = i + 1; });
   return { sailed, discards: nd, rows: arr };
 }

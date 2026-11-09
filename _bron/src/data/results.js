@@ -2,14 +2,14 @@
 // Bijwerken na elke wedstrijd: voeg per groep de rijen toe onder de race-id.
 export const RACES = [
   { id: 'r1', date: '2026-10-11', name: 'GC 1', src: { TS: 'https://www.grevelingencup.nl/wp-content/uploads/2026/10/Toer-s-oktober.htm', ORC: 'https://www.grevelingencup.nl/wp-content/uploads/2026/10/ORC-oktober.htm' } },
-  { id: 'r2', date: '2026-11-08', name: 'GC 2' },
+  { id: 'r2', date: '2026-11-08', name: 'GC 2', src: { TS: 'https://www.grevelingencup.nl/wp-content/uploads/2026/11/Toer-S-Nov-26.htm' } },
   { id: 'r3', date: '2026-12-13', name: 'GC 3' },
   { id: 'r4', date: '2027-01-10', name: 'GC 4' },
   { id: 'r5', date: '2027-02-07', name: 'GC 5' },
   { id: 'r6', date: '2027-03-07', name: 'Inhaal', note: 'alleen als er een wedstrijd is uitgevallen' },
   { id: 'r7', date: '2027-03-20', name: 'Finale' },
 ];
-export const RESULTS_SRC = 'Uitslagen van grevelingencup.nl (Uitslagen › Toer-S en ORC klasse), ZW-scoring. Bijgewerkt 11 okt 2026.';
+export const RESULTS_SRC = 'Uitslagen van grevelingencup.nl (Uitslagen › Toer-S en ORC klasse), ZW-scoring. Bijgewerkt 8 nov 2026 (Toer-S; ORC GC 2 nog niet gepubliceerd).';
 
 // Rij: [plaats|code, zeilnr (GC), boot, schipper, type, finish, gezeild, gecorrigeerd, punten]
 const R = (pl, gc, boat, skip, type, fin, sail, corr, pts) => ({ pl, gc, boat, skip, type, fin, sail, corr, pts });
@@ -30,7 +30,25 @@ export const GROUPS = {
     R('DNS', '811', 'Sobat Kras', 'Tom Smeets', 'Salona 37', '', '', '', 16),
     R('RET', '757', 'X-Perience', 'Henk van den Berg', 'X-412', '', '', '', 16),
     R('RET', '809', 'Pogoloco', 'K. Jumelet', 'Pogo 30', '', '', '', 16),
-  ] } },
+  ],
+    r2: [
+      R(1, '794', 'ZARAFA', 'Brita Van Rossum en Iwan V.', 'HOD 35', '14:33:49', '3:28:49', '3:27:15', 1),
+      R(2, '171', 'A Boen!!', 'Johan Bol', 'Grand Soleil 34', '14:37:07', '3:32:07', '3:31:53', 2),
+      R(3, '796', 'Bierkaai', 'Jeroen de Jong', 'Lutra 40', '14:26:10', '3:21:10', '3:33:07', 3),
+      R(4, '807', 'Bruiser', 'Rick Doorneveld', 'J-88', '14:46:07', '3:41:07', '3:36:42', 4),
+      R(5, '774', 'Chicago', 'Ed Groenendijk', 'Archambault Grand Surprise', '14:51:10', '3:46:10', '3:41:39', 5),
+      R(6, '803', 'Dream Machine', 'Stefan Marechal', 'Elan 380', '14:47:13', '3:42:13', '3:42:52', 6),
+      R(7, '752', 'SEELIG', 'Gertjan Timmers', 'Dehler 38 JV', '14:49:33', '3:44:33', '3:43:26', 7),
+      R(8, '603', 'Bubbels', 'Andre Kreemer', 'Dehler 36 sq', '14:50:46', '3:45:46', '3:45:41', 8),
+      R(9, '817', 'Camelot', 'Nils Bouwman', 'First 40', '14:49:01', '3:44:01', '3:48:43', 9),
+      R(10, '757', 'X-Perience', 'Henk van den Berg', 'X-412', '15:00:08', '3:55:08', '3:58:40', 10),
+      R(11, '809', 'Pogoloco', 'K. Jumelet', 'Pogo 30', '15:19:13', '4:14:13', '4:11:10', 11),
+      R(12, '808', 'XINIX', 'Paul Ockers', 'Eagle 46', '15:24:01', '4:19:01', '4:21:36', 12),
+      R(13, '257', 'Dehlicious', 'Peter Raijer', 'Dehler 42', '15:21:18', '4:16:18', '4:24:33', 13),
+      R(14, '811', 'Sobat Kras', 'Tom Smeets', 'Salona 37', '15:37:55', '4:32:55', '4:29:55', 14),
+      R('DNS', '769', 'Athoma', 'Laurent de Kerchove', 'Dehler 30 OD', '', '', '', 16),
+    ],
+  } },
   ORC1: { title: 'ORC groep 1', flag: 'K', start: '11:05', races: { r1: [
     R(1, '636', 'Boerderij', 'Jan Ketting', 'BH 36', '13:52:06', '2:47:06', '3:06:37', 1),
     R(2, '625', 'SJamaan', 'Edwin Spaans', 'J35', '13:58:31', '2:53:31', '3:08:35', 2),
@@ -57,7 +75,25 @@ export const GROUPS = {
     R('DNS', '806', 'Java', 'Arthur Caniau', 'J-70', '', '', '', 16),
     R('DNS', '814', 'Viva', 'Carlo Vroon', 'Melges 24', '', '', '', 16),
     R('RET', '773', 'X-RAY', 'Matthijs Priester', 'X3/4 ton MKII', '', '', '', 16),
-  ] } },
+  ],
+    r2: [
+      R(1, '747', 'Blauwe Knoop', 'W.P.M. Hermans', 'First 31.7', '14:05:26', '2:55:26', '2:43:09', 1),
+      R(2, '814', 'Viva', 'Carlo Vroon', 'Melges 24', '13:57:46', '2:47:46', '2:43:54', 2),
+      R(3, '710', 'Javelin', 'J.J. Roth', 'J-80', '14:15:35', '3:05:35', '2:51:13', 3),
+      R(4, '773', 'X-RAY', 'Matthijs Priester', 'X3/4 ton MKII', '14:16:55', '3:06:55', '2:57:34', 4),
+      R(5, '776', 'Juggernaut', 'Dimitri Vanvyve', 'J-105', '14:12:18', '3:02:18', '2:57:45', 5),
+      R(6, '259', 'Fungu Yasini', 'G. van Steelant', 'First 31.7', '14:26:42', '3:16:42', '2:59:59', 6),
+      R(7, '301', 'IMP', 'Coen Dusseljee', 'Sun Fast 36', '14:18:05', '3:08:05', '3:02:26', 7),
+      R(8, '115', 'Jottum', 'Hans Romers', 'First 35s5', '14:37:18', '3:27:18', '3:09:41', 8),
+      R(9, '819', 'Magnifique', 'Mayer Bertin', 'First 31.7', '14:38:51', '3:28:51', '3:14:50', 9),
+      R(10, '731', 'X-Challenge', 'Raphael De Rijcke', 'X-372 Sport', '14:52:08', '3:42:08', '3:35:08', 10),
+      R(11, '246', 'Sushi', 'Joost Geleijns', 'Comet 33', '14:54:48', '3:44:48', '3:36:32', 11),
+      R(12, '720', 'FF Niks', 'Dirk Meijer', 'Sun Fast 37', '15:10:58', '4:00:58', '3:51:20', 12),
+      R('DNS', '730', 'Joint', 'Sander Zwanenburg', 'J-108', '', '', '', 16),
+      R('DNS', '806', 'Java', 'Arthur Caniau', 'J-70', '', '', '', 16),
+      R('RET', '721', 'Rebel', 'Steven Govaerts', 'First 31.7', '', '', '', 16),
+    ],
+  } },
   TS3: { title: 'Toer-S groep 3', flag: 'W', start: '11:15', races: { r1: [
     R(1, '745', 'Stella Maris', 'Ticco Maagdenberg', 'Contest 37', '13:57:32', '2:42:32', '2:14:54', 1),
     R(2, '804', 'Johnnie', 'Frans Slob', 'Standfast Loper', '14:13:26', '2:58:26', '2:22:45', 2),
@@ -69,6 +105,19 @@ export const GROUPS = {
     R('DNS', '787', 'Comodo', 'Theo Sijs', 'Westerly GK24', '', '', '', 11),
     R('DNS', '802', 'Air Mover', 'Robert dHond', 'H-Boot', '', '', '', 11),
     R('DNS', '801', 'Ucane', 'Annelote van Mierlo', 'First 21.1', '', '', '', 11),
-  ] } },
+  ],
+    r2: [
+      R(1, '802', 'Air Mover', 'Robert dHond', 'H-Boot', '14:12:06', '2:57:06', '2:11:03', 1),
+      R(2, '745', 'Stella Maris', 'Ticco Maagdenberg', 'Contest 37', '14:06:14', '2:51:14', '2:22:07', 2),
+      R(3, '326', 'Rooie Rakker', 'Paul Stoelinga', 'Arpège', '14:04:03', '2:49:03', '2:22:10', 3),
+      R(4, '804', 'Johnnie', 'Frans Slob', 'Standfast Loper', '14:25:22', '3:10:22', '2:32:18', 4),
+      R(5, '394', "L'avalanche", 'Dennis Schagen', 'Sun Odyssey 32.2', '14:15:45', '3:00:45', '2:35:47', 5),
+      R(6, '787', 'Comodo', 'Theo Sijs', 'Westerly GK24', '14:27:28', '3:12:28', '2:36:52', 6),
+      R(7, '116', 'Kelt', 'Bart Zijtregtop', 'Kelt 620', '15:02:52', '3:47:52', '2:45:12', 7),
+      R(8, '816', 'Du Petit Four', 'Mayke Langmuur', 'Dufour 36 Classic', '14:23:37', '3:08:37', '2:45:59', 8),
+      R(9, '713', 'Keep it Simple', 'Bas van Dijk', 'Spirit 28', '14:35:37', '3:20:37', '2:47:31', 9),
+      R('DNS', '801', 'Ucane', 'Annelote van Mierlo', 'First 21.1', '', '', '', 11),
+    ],
+  } },
 };
 export const GROUP_ORDER = ['TS1', 'ORC1', 'TS2', 'TS3'];

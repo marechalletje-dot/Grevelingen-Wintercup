@@ -7,7 +7,7 @@ test('aftrek volgens WB 17.6', () => {
   assert.deepEqual([1, 5, 6, 9, 10, 14, 15, 20].map(discards), [0, 0, 1, 1, 2, 2, 3, 3]);
 });
 test('na race 1: Toer-S groep 1, Dream Machine 2e', () => {
-  const s = standings(GROUPS.TS1, RACES.map(r => r.id));
+  const s = standings({ races: { r1: GROUPS.TS1.races.r1 } }, RACES.map(r => r.id));
   assert.equal(s.sailed.length, 1); assert.equal(s.discards, 0);
   assert.equal(s.rows[0].boat, 'A Boen!!');
   const dm = s.rows.find(r => r.boat === 'Dream Machine'); assert.equal(dm.rank, 2); assert.equal(dm.net, 2);
@@ -24,4 +24,14 @@ test('ontbrekende boot krijgt DNC en aftrek bij 6 races', () => {
   assert.equal(s.discards, 1);
   const b = s.rows.find(r => r.boat === 'B'); assert.equal(b.pts.r3.code, 'DNC'); assert.equal(b.pts.r3.p, 2); assert.equal(b.gross, 11); assert.equal(b.net, 9);
   assert.equal(s.rows[0].boat, 'A'); assert.equal(s.rows[0].net, 5);
+});
+test('na GC 2: Toer-S groep 1 volgens overall grevelingencup.nl (8 nov 2026)', () => {
+  const s = standings(GROUPS.TS1, RACES.map(r => r.id));
+  assert.equal(s.sailed.length, 2);
+  assert.deepEqual(s.rows.slice(0, 5).map(r => r.boat), ['A Boen!!', 'Bierkaai', 'Dream Machine', 'SEELIG', 'Bruiser']);
+  assert.equal(s.rows.find(r => r.boat === 'Dream Machine').net, 8);
+});
+test('na GC 2: Toer-S groep 2, gelijke stand 21 punten volgens A8', () => {
+  const s = standings(GROUPS.TS2, RACES.map(r => r.id));
+  assert.deepEqual(s.rows.slice(9, 12).map(r => r.boat), ['FF Niks', 'X-Challenge', 'Sushi']);
 });
